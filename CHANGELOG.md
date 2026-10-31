@@ -10,6 +10,8 @@ All notable changes to the sign are listed here. The format follows
 - 3D-printable bat-shaped door holder: the sign is the bat's body, the wings hide the UNO and
   the power bank, and it hangs with Command strips. Prints in two halves on a 225 mm bed, with
   a quick fit-test piece to print first.
+- Plain 3D-printable case that just encloses the display, with a slot for the cable and
+  Command strip pads at the ends. Both halves print together in about an hour.
 
 ## [1.0.0] - 2026-10-31
 

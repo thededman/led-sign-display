@@ -74,6 +74,23 @@ if the cable enters at the right-hand end of the sign.
 pio run -e uno-finder -t upload
 ```
 
+## Plain case (3D printed)
+
+The quick option: a black frame around the display only, open at the back, with a Command
+strip pad at each end and a slot under the right-hand end where the cable comes out. The UNO
+and power bank stay outside.
+
+Print `holder/stl/case-left.stl` and `case-right.stl` together (load both into Cura and it
+places them side by side) plus `pins.stl`: about 1–1.5 hours and 64 g. Same Cura settings as
+the bat holder below: face down as exported, no supports. Then:
+
+1. Push two pins into one half (a drop of super glue holds them) and press the halves together.
+2. Lay the case face down and lower the LED strip in from the back, LEDs down, cable end at the
+   end with the slot. Feed the cable out through the slot and tape across the module backs.
+3. One Command strip on each end pad, and press it to the door for 30 seconds.
+
+`python3 holder/case.py` rebuilds it; the sizes are at the top of the file.
+
 ## Door holder (3D printed)
 
 A bat-shaped frame for hanging the sign with Command strips: the sign is the bat's body, the
