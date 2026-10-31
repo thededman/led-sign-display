@@ -6,6 +6,11 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+- 3D-printable bat-shaped door holder: the sign is the bat's body, the wings hide the UNO and
+  the power bank, and it hangs with Command strips. Prints in two halves on a 225 mm bed, with
+  a quick fit-test piece to print first.
+
 ## [1.0.0] - 2026-10-31
 
 ### Added

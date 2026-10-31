@@ -74,6 +74,45 @@ if the cable enters at the right-hand end of the sign.
 pio run -e uno-finder -t upload
 ```
 
+## Door holder (3D printed)
+
+A bat-shaped frame for hanging the sign with Command strips: the sign is the bat's body, the
+right wing hides the UNO and the left wing hides the power bank. The files are in
+`holder/stl`; all print **face down, exactly as exported, with no supports**.
+
+| File | Print time on a Neptune 4 | Notes |
+|---|---|---|
+| `fit-test.stl` | ~10 min | Print this first |
+| `pins.stl` | ~5 min | Four alignment pins; print with the fit test |
+| `right-half-uno.stl` | ~1.5–2 h, ~63 g | 216 × 176 mm |
+| `left-half-power-bank.stl` | ~1.5–2 h, ~62 g | 216 × 176 mm |
+
+Cura settings: PLA, 0.2 mm layers, 3 walls, 15 % infill, supports off, build plate adhesion
+Skirt or None (a brim won't fit beside a half on the 225 mm bed).
+
+**Check the fit first.** Slide the fit test onto the left-hand end module from the left. The
+module should sit snugly against the thin lip with every LED showing. Too tight or too loose:
+change `FIT` in `holder/holder.py` (0.1 mm steps) and rebuild.
+
+**Assembly**
+1. Push the pins into one half (a drop of super glue holds them), then press the halves together.
+2. Lay the frame face down. Lower the LED strip in from the back, LEDs down, with the cable end
+   in the UNO half. Run a strip of tape across the module backs so they can't drop out.
+3. Put the UNO in the right wing's pocket and the power bank in the left one (seen from the
+   front). The cables run behind the sign through the notches in the two posts.
+4. Command strips (small, 16 mm wide): two on each wing post, above and below the notch, and
+   one each on the bat's head and feet. Press the whole thing to the door for 30 seconds.
+
+**Changing it.** The design is a Python script with every size at the top:
+
+```bash
+pip install manifold3d numpy
+python3 holder/holder.py
+```
+
+To look at it in 3D, run `python3 -m http.server --directory holder 8032` and open
+http://localhost:8032/viewer.html.
+
 ## Changing the words
 
 Everything the sign says is in `src/messages.h`. Use capital letters, digits and

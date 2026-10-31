@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign Holder</title>
+<style>
+  :root { --bg: #f4f2ee; --fg: #222; --panel: #fff; --border: #d8d4cc; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #16161a; --fg: #ddd; --panel: #222228; --border: #3a3a42; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+  #bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; }
+  button { background: var(--panel); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  label { display: flex; gap: 6px; align-items: center; }
+  #view { width: 100vw; height: calc(100vh - 52px); display: block; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="bar">
+  <strong>Sign holder</strong>
+  <button data-view="front">Front</button>
+  <button data-view="back">Back (door side)</button>
+  <button data-view="angle">Angle</button>
+  <label><input type="checkbox" id="parts" checked> Show sign, UNO and power bank</label>
+  <label><input type="checkbox" id="apart"> Pull halves apart</label>
+</div>
+<canvas id="view"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+const X0 = 128.2;  // where the module pocket ends (holder.py)
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xd9d4cb);
+const camera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+const controls = new OrbitControls(camera, canvas);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(-200, 300, -400);
+scene.add(sun);
+
+const holder = new THREE.MeshStandardMaterial({ color: 0x26262b, roughness: 0.75, metalness: 0.05 });
+const halves = {};
+for (const name of ['left-half-power-bank', 'right-half-uno']) {
+  new STLLoader().load(`stl/${name}.stl`, geometry => {
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    halves[name] = new THREE.Mesh(geometry, holder);
+    halves[name].userData.side = Math.sign(geometry.boundingBox.min.x + geometry.boundingBox.max.x);
+    scene.add(halves[name]);
+    apart();
+  });
+}
+
+// Stand-ins for what goes inside, so the fit is easy to see
+const parts = new THREE.Group();
+function box(x0, y0, z0, x1, y1, z1, color, opacity = 1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0),
+    new THREE.MeshStandardMaterial({ color, transparent: opacity < 1, opacity, roughness: 0.6 }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  parts.add(m);
+}
+box(-128, -16, 1.6, 128, 16, 10, 0xb3241b);                   // LED modules
+box(-128, -16, 10, 128, 16, 27, 0x1d5e9e, 0.55);              // their circuit boards and jumpers
+box(-X0 - 72, -34, 3, -X0 - 19, 34, 28, 0x1f8a5a, 0.85);      // UNO (right wing, seen from the front)
+box(X0 + 19, -50, 3, X0 + 84, 50, 19, 0x9a9a9a, 0.85);        // power bank (left wing)
+scene.add(parts);
+document.getElementById('parts').onchange = e => { parts.visible = e.target.checked; };
+
+function apart() {
+  const gap = document.getElementById('apart').checked ? 40 : 0;
+  for (const half of Object.values(halves)) half.position.x = half.userData.side * gap;
+}
+document.getElementById('apart').onchange = apart;
+
+// The model's front face is at z = 0 and the door side at z = 34, so "front" looks along +z
+const views = { front: [0, 0, -620], back: [0, 0, 620], angle: [-330, 180, -460] };
+function show(name) {
+  camera.position.set(...views[name]);
+  camera.up.set(0, 1, 0);
+  controls.target.set(0, 15, 17);
+  controls.update();
+}
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => show(b.dataset.view));
+show('front');
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+renderer.setAnimationLoop(() => renderer.render(scene, camera));
+</script>
+</body>
+</html>

@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8031", "--directory", "tools/preview/build"],
       "port": 8031
+    },
+    {
+      "name": "holder",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8032", "--directory", "holder"],
+      "port": 8032
     }
   ]
 }
