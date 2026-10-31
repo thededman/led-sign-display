@@ -427,12 +427,3 @@ void runShow() {
   play(interlude);
   play(sceneFinale);
 }
-
-void finderCard(uint8_t layout) {
-  static const char READ_ME[] PROGMEM = " READ ME";
-  wipe(fb);
-  int x = 1;
-  if (layout >= 10) x += drawChar(fb, '0' + layout / 10, x, 0) + 1;
-  x += drawChar(fb, '0' + layout % 10, x, 0) + 1;
-  drawText(fb, READ_ME, x);
-}

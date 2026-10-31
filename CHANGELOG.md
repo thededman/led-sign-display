@@ -6,12 +6,19 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-31
+
 ### Added
 - One-minute Halloween show on a loop: WELCOME!, Pac-Man and the ghosts, the power-pellet
   chase, HAPPY HALLOWEEN, ten rotating jokes, BOO! ghost, bats, jack-o'-lanterns, and a
   glitchy BOO! finale with eyes in the dark.
-- Runs on an ESP32 DevKit V1, or on an Arduino UNO as a fallback.
-- Orientation finder for working out how the modules are wired.
-- BOOT button on the ESP32 steps through brightness levels.
+- Runs on an Arduino UNO, powered from a USB power bank for a whole evening.
+- Wiring test and orientation finder for working out how a display is wired.
 - Mac preview that plays the show on a picture of the sign.
 - Wiring and setup instructions in the README.
+
+### Known issues
+- The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
+
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/thededman/led-sign-display/releases/tag/v1.0.0
