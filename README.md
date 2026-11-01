@@ -1,15 +1,20 @@
-# Halloween LED Sign
+# LED Sign
 
 A 64×8 LED sign made of eight SainSmart MAX7219 8×8 modules in a row, run by an Arduino UNO.
-It plays a one-minute Halloween show on a loop:
+It plays a birthday show for Paul and Larry on a loop, about 80 seconds a pass:
 
-1. **WELCOME!** fades in pixel by pixel, then Pac-Man chomps through it with four ghosts behind him.
-2. **Power pellet**: Pac-Man eats a row of dots, hits the power pellet, turns on the ghosts and
-   eats all four (200, 400, 800, 1600) while their eyes fly home.
-3. **HAPPY** drops in, then **HALLOWEEN**, and Pac-Man eats it from the right.
-4. Two **jokes** scroll by with Pac-Man and the ghosts chasing them, and he gobbles the end.
-5. Between jokes: a ghost that says **BOO!**, flapping **bats**, or blinking **jack-o'-lanterns**.
-6. **Finale**: a shaking, glitching **BOO!**, then eyes blinking in the dark.
+1. **Confetti**, then **HAPPY** and **BIRTHDAY** drop in, and Pac-Man and the ghosts eat it.
+2. The **names** do the wave in double-width letters: **PAUL!** with balloons rising up the
+   sides, then **LARRY!** in confetti.
+3. A **cake** with two flickering candles: **WISH!**, the candles blow out in puffs of smoke,
+   **HOORAY!**, and then Pac-Man eats the cake and burps.
+4. Two **jokes** scroll by with Pac-Man and the ghosts chasing them.
+5. Between jokes: **balloons**, **fireworks**, a **present** that pops open (SURPRISE!), or
+   Pac-Man's **power-pellet** chase.
+6. **Finale**: fireworks around HAPPY BIRTHDAY PAUL & LARRY!
+
+The Halloween show from Oct 31, 2026 is release `v1.0.0`. To bring it back:
+`git checkout v1.0.0 -- src/messages.h src/show.cpp src/sprites.h`, then upload.
 
 ## Wiring
 
@@ -31,8 +36,13 @@ header; 5V is on the bottom header between 3.3V and GND.
 ### ESP32 (not working yet)
 
 The code also builds for an ESP32 DevKit V1 (DIN → D23, CS → D5, CLK → D18, VCC → VIN), but
-on this sign the ESP32's 3.3 V signals were too weak: the display stayed dark. It needs a
-3.3 V → 5 V level shifter such as a 74HCT125 between the ESP32 and the display.
+on this sign the ESP32's 3.3 V signals were too weak: the display stayed dark. Every ESP32 has
+3.3 V pins, so a newer one won't help on its own. Two ways to get Wi-Fi:
+
+- **Arduino UNO R4 WiFi** (about $27.50): its main chip runs at 5 V like the UNO, so it uses
+  the same wiring and pins, powers from USB-C, and has an ESP32-S3 on board for Wi-Fi.
+- An ESP32 plus a **SN74AHCT125** level shifter (about $1.50): VCC to 5 V, the /OE pins to
+  GND, ESP32 pins into the A inputs and the Y outputs to DIN, CLK and CS.
 
 ## Power
 
@@ -134,8 +144,10 @@ http://localhost:8032/viewer.html.
 
 ## Changing the words
 
-Everything the sign says is in `src/messages.h`. Use capital letters, digits and
-`! ? . , ' - & : /`. A joke that starts with `@` ends with Pac-Man burping.
+Everything the sign says is in `src/messages.h`. The birthday names are the first lines,
+so the next birthday is a quick edit (names also appear in the finale line and a couple of
+jokes). Use capital letters, digits and `! ? . , ' - & : / ( )`. A joke that starts with
+`@` ends with Pac-Man burping.
 
 ## Previewing on a Mac
 

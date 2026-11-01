@@ -83,36 +83,38 @@ static const uint8_t EYES[8] PROGMEM = {
   0b00000000,
 };
 
-// Bat, wings up and wings down
-static const uint8_t BAT[2][8] PROGMEM = {
-  { 0b10000001,
-    0b11011011,
+// Balloon on a string, two wiggle frames
+static const uint8_t BALLOON[2][8] PROGMEM = {
+  { 0b00111100,
     0b01111110,
-    0b00011000,
-    0, 0, 0, 0 },
-  { 0b00100100,
+    0b01111110,
+    0b01111110,
     0b00111100,
-    0b11111111,
-    0b10000001,
-    0, 0, 0, 0 },
+    0b00011000,
+    0b00010000,
+    0b00001000 },
+  { 0b00111100,
+    0b01111110,
+    0b01111110,
+    0b01111110,
+    0b00111100,
+    0b00011000,
+    0b00001000,
+    0b00010000 },
 };
 
-// Jack-o'-lantern, eyes open and eyes shut
-static const uint8_t PUMPKIN[2][8] PROGMEM = {
-  { 0b00001000,
-    0b01111110,
-    0b11111111,
-    0b10011001,
-    0b11111111,
-    0b10000001,
-    0b11011011,
-    0b01111110 },
-  { 0b00001000,
-    0b01111110,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b10000001,
-    0b11011011,
-    0b01111110 },
+// A present: lid with a bow, and the box below it, drawn separately so the lid can pop off
+static const uint8_t GIFT_LID[8] PROGMEM = {
+  0b01100110,
+  0b00011000,
+  0b11111111,
+  0, 0, 0, 0, 0,
+};
+static const uint8_t GIFT_BOX[8] PROGMEM = {
+  0, 0, 0,
+  0b10011001,
+  0b10011001,
+  0b10011001,
+  0b10011001,
+  0b11111111,
 };

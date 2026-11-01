@@ -48,7 +48,7 @@ canvas{display:block;width:100%;max-width:1052px;height:auto;background:#000;bor
 .sheet span{width:48px;text-align:right}
 .sheet canvas{max-width:526px}
 </style></head><body>
-<h1>Halloween sign preview</h1>
+<h1>Sign preview</h1>
 <div id="player"><canvas id="c"></canvas>
 <div class="bar"><button id="pp">Pause</button><input id="seek" type="range" min="0" step="10"><span id="time"></span></div></div>
 <div id="sheet" class="sheet"></div>

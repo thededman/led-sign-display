@@ -205,38 +205,202 @@ static void burp() {
   chompAcross(true, 0, stopAt);
 }
 
-// Pairs of eyes open, blink and vanish in the dark
-static void eyesInTheDark(uint8_t steps) {
-  const uint8_t n = 6;
-  uint8_t state[n] = {0}, ey[n] = {0};  // state: 0 hidden, 1 open, 2 blinking
-  for (uint8_t t = 0; t < steps; t++) {
-    wipe(fb);
-    for (uint8_t i = 0; i < n; i++) {
-      switch (state[i]) {
-        case 0: if (rnd(14) == 0) { state[i] = 1; ey[i] = rnd(6); } break;
-        case 1: if (rnd(20) == 0) state[i] = 2; else if (rnd(60) == 0) state[i] = 0; break;
-        default: state[i] = 1; break;
-      }
-      if (!state[i]) continue;
-      uint8_t col = (state[i] == 1 ? 3 : 2) << ey[i];  // blinking leaves just the lower row
-      int x = 3 + i * 10;
-      fb[x] |= col; fb[x + 1] |= col;
-      fb[x + 4] |= col; fb[x + 5] |= col;
+// Text on row 1 with one letter at a time hopping up a row, like a crowd doing the wave
+static void drawWave(uint8_t *buf, const char *s, int x, int t, uint8_t wide = 1) {
+  const int hop = (t / 2) % (textLen(s) + 3);  // a short rest between waves
+  int k = 0;
+  for (char c; (c = pgm_read_byte(s)); s++, k++) x += drawChar(buf, c, x, k == hop ? 0 : 1, wide) + wide;
+}
+
+// Double width if the text fits that way
+static uint8_t widest(const char *s) { return textWidth(s, 2) <= WIDTH ? 2 : 1; }
+
+// A couple of twinkles in the empty columns either side of centred text
+static void sparkle(const char *s) {
+  const int x0 = centered(s), w = textWidth(s);
+  for (uint8_t i = 0; i < 2; i++) {
+    int x = rnd(WIDTH - w - 2);
+    if (x >= x0 - 1) x += w + 2;  // skip over the text
+    setPixel(fb, x, rnd(8));
+  }
+}
+
+// Confetti fluttering down the sign
+static struct {
+  int8_t x[24], y[24];
+} confetti;
+
+static void confettiStart() {
+  for (uint8_t i = 0; i < 24; i++) {
+    confetti.x[i] = rnd(WIDTH);
+    confetti.y[i] = -(int8_t)rnd(10);
+  }
+}
+
+// Moves the first `count` pieces on by one frame and draws them; with `refill`, pieces that
+// reach the bottom start again at the top
+static void confettiStep(int f, uint8_t count, bool refill) {
+  for (uint8_t i = 0; i < count; i++) {
+    if (f % (1 + i % 3) == 0) confetti.y[i]++;
+    if (confetti.y[i] > 7 && refill) {
+      confetti.y[i] = -(int8_t)rnd(4);
+      confetti.x[i] = rnd(WIDTH);
     }
-    FRAME(80);
+    if (rnd(4) == 0) confetti.x[i] += (int)rnd(3) - 1;
+    setPixel(fb, confetti.x[i], confetti.y[i]);
+  }
+}
+
+// A firework launched `age` frames ago: a rocket climbs to (x, y), bursts, then sparkles out
+static void drawFirework(int x, int y, int age) {
+  static const int8_t DX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static const int8_t DY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+  const int rise = 7 - y;
+  if (age < 0) return;
+  if (age < rise) {
+    setPixel(fb, x, 7 - age);
+    setPixel(fb, x, 8 - age);
+    return;
+  }
+  const int r = age - rise + 1;
+  if (r > 8) return;
+  for (uint8_t d = 0; d < 8; d++) {
+    for (int k = r - 1; k <= r && k <= 4; k++) {
+      if (k < 1 || (r > 4 && rnd(3))) continue;  // after the burst, only a few sparkles
+      int stretch = DY[d] == 0 ? k / 2 : 0;       // a wider burst sideways
+      setPixel(fb, x + DX[d] * (k + stretch), y + DY[d] * k);
+    }
+  }
+}
+
+static void fireworks(uint8_t count) {
+  int8_t x[6], y[6];
+  int start[6];
+  for (uint8_t i = 0; i < count; i++) {
+    x[i] = 6 + rnd(WIDTH - 12);
+    y[i] = 2 + rnd(3);
+    start[i] = i * 7 + rnd(4);
+  }
+  const int end = start[count - 1] + 15;
+  for (int f = 0; f < end; f++) {
+    wipe(fb);
+    for (uint8_t i = 0; i < count; i++) drawFirework(x[i], y[i], f - start[i]);
+    FRAME(50);
+  }
+}
+
+// A two-candle birthday cake, 16 wide, with its left edge at x; candles are at x + 4 and x + 11
+static void drawCake(uint8_t *buf, int x, bool lit) {
+  for (int c = 0; c < 16; c++) {
+    setPixel(buf, x + c, 4);                                       // icing
+    if (c % 3 != 2) setPixel(buf, x + c, 5);                       // drips
+    if (c == 0 || c == 15 || c % 5 == 2) setPixel(buf, x + c, 6);  // sides and sprinkles
+  }
+  for (int c = -1; c <= 16; c++) setPixel(buf, x + c, 7);         // plate
+  for (int cx = x + 4; cx <= x + 11; cx += 7) {
+    setPixel(buf, cx, 2);
+    setPixel(buf, cx, 3);
+    if (lit) {
+      setPixel(buf, cx, 1);
+      if (rnd(3) == 0) setPixel(buf, cx, 0);  // the flame flickers taller
+    }
   }
 }
 
 // ---------------------------------------------------------------- scenes
 
-static void sceneWelcome() {
-  wipe(fb);
-  FRAME(600);
-  wipe(bg);
-  drawText(bg, MSG_WELCOME, centered(MSG_WELCOME));
-  dissolve(bg, true);
-  FRAME(2500);
+// Confetti, then HAPPY and BIRTHDAY drop in, and Pac-Man and the ghosts gobble it up
+static void sceneHappyBirthday() {
+  confettiStart();
+  for (int t = 0; t < 45; t++) {
+    wipe(fb);
+    confettiStep(t, 24, t < 15);
+    FRAME(50);
+  }
+  dropIn(MSG_HAPPY);
+  FRAME(1000);
+  dropOut(MSG_HAPPY);
+  dropIn(MSG_BIRTHDAY);
+  memcpy(bg, fb, WIDTH);
+  for (uint8_t t = 0; t < 30; t++) {
+    memcpy(fb, bg, WIDTH);
+    sparkle(MSG_BIRTHDAY);
+    FRAME(70);
+  }
   chompAcross(false, 4, -8);
+}
+
+// Each name does the wave: the first with balloons rising up the sides, the second in confetti
+static void sceneNames() {
+  uint8_t wide = widest(NAME1);
+  int x = centered(NAME1, wide);
+  for (int t = 0; t < 60; t++) {
+    wipe(fb);
+    drawWave(fb, NAME1, x, t, wide);
+    drawSprite(fb, BALLOON[(t / 4) % 2], -1, 8 - t / 3);
+    drawSprite(fb, BALLOON[(t / 4 + 1) % 2], WIDTH - 7, 12 - t / 3);
+    FRAME(60);
+  }
+  dropIn(MSG_AND);
+  FRAME(500);
+  wide = widest(NAME2);
+  x = centered(NAME2, wide);
+  confettiStart();
+  for (int t = 0; t < 60; t++) {
+    wipe(fb);
+    drawWave(fb, NAME2, x, t, wide);
+    confettiStep(t, 16, true);
+    FRAME(60);
+  }
+}
+
+// The cake: candles flicker, make a wish, blow them out, HOORAY! ...and Pac-Man eats the cake
+static void sceneCake() {
+  const int middle = (WIDTH - 16) / 2, left = 4;
+  wipe(bg);
+  drawCake(bg, middle, true);
+  wipe(fb);
+  dissolve(bg, true);
+  for (uint8_t t = 0; t < 25; t++) {
+    wipe(fb);
+    drawCake(fb, middle, true);
+    FRAME(80);
+  }
+  for (int x = middle; x >= left; x--) {
+    wipe(fb);
+    drawCake(fb, x, true);
+    FRAME(STEP_MS);
+  }
+  const int beside = left + 17, room = WIDTH - beside;  // the space to the right of the cake
+  const int wishX = beside + (room - textWidth(MSG_WISH)) / 2;
+  for (uint8_t t = 0; t < 40; t++) {
+    wipe(fb);
+    drawCake(fb, left, true);
+    drawWave(fb, MSG_WISH, wishX, t);
+    FRAME(70);
+  }
+  for (uint8_t t = 0; t < 14; t++) {  // blown out: a puff of smoke drifts off each candle
+    wipe(fb);
+    drawCake(fb, left, false);
+    drawText(fb, MSG_WISH, wishX, 1);
+    for (int k = 0; k < 2; k++) {
+      int age = t - k * 2;
+      if (age >= 0 && age < 10) setPixel(fb, left + 4 + k * 7 - age / 2, age < 4 ? 1 : 0);
+    }
+    FRAME(80);
+  }
+  const int hoorayX = beside + (room - textWidth(MSG_HOORAY)) / 2;
+  for (uint8_t t = 0; t < 30; t++) {
+    wipe(fb);
+    drawCake(fb, left, false);
+    drawWave(fb, MSG_HOORAY, hoorayX, t);
+    FRAME(60);
+  }
+  wipe(bg);
+  drawCake(bg, left, false);
+  drawText(bg, MSG_HOORAY, hoorayX, 1);
+  chompAcross(true, 0, WIDTH);
+  burp();
 }
 
 // Pac-Man eats a line of dots with the ghosts behind him, then the power pellet turns the tables
@@ -292,16 +456,6 @@ static void scenePowerPellet() {
   }
 }
 
-static void sceneHappyHalloween() {
-  dropIn(MSG_HAPPY);
-  FRAME(1200);
-  dropOut(MSG_HAPPY);
-  dropIn(MSG_HALLOWEEN);
-  FRAME(2500);
-  memcpy(bg, fb, WIDTH);
-  chompAcross(true, 4, WIDTH);
-}
-
 static void sceneJoke() {
   static uint8_t next;
   const char *s = (const char *)pgm_read_ptr(&JOKES[next]);
@@ -312,102 +466,77 @@ static void sceneJoke() {
   if (answer) burp();
 }
 
-// A ghost floats in, says BOO! and zooms off
-static void ghostBoo() {
-  const int stopAt = WIDTH - 14;
-  const int tx = stopAt - 4 - textWidth(MSG_BOO, 2);
-  int f = 0;
-  for (int gx = WIDTH; gx >= stopAt; gx--, f++) {
-    wipe(fb);
-    drawSprite(fb, GHOST[(f / 3) % 2], gx, (f / 6) % 2, true);
-    FRAME(STEP_MS * 2);
+// Balloons float up past the sign
+static void balloons() {
+  const uint8_t n = 5;
+  int x[n], start[n];
+  for (uint8_t i = 0; i < n; i++) {
+    x[i] = 2 + i * 12 + rnd(5);
+    start[i] = rnd(12);
   }
-  for (int t = 0; t < 30; t++, f++) {
+  for (int f = 0; f < 75; f++) {  // each balloon rises a row every 3 frames
     wipe(fb);
-    drawText(fb, MSG_BOO, tx + (t < 12 ? (int)rnd(3) - 1 : 0), 0, 2);
-    drawSprite(fb, GHOST[(f / 3) % 2], stopAt, (f / 6) % 2, true);
+    for (uint8_t i = 0; i < n; i++)
+      drawSprite(fb, BALLOON[((f + i) / 4) % 2], x[i], 8 - (f - start[i]) / 3);
+    FRAME(50);
+  }
+}
+
+// A present shakes, its lid pops off, and out comes SURPRISE!
+static void gift() {
+  int x = (WIDTH - 8) / 2;
+  for (uint8_t t = 0; t < 24; t++) {
+    int jiggle = t % 4 == 1 ? 1 : t % 4 == 3 ? -1 : 0;
+    wipe(fb);
+    drawSprite(fb, GIFT_BOX, x + jiggle);
+    drawSprite(fb, GIFT_LID, x + jiggle);
     FRAME(60);
   }
-  for (int gx = stopAt; gx < WIDTH; gx += 2, f++) {
+  for (; x > 2; x--) {
     wipe(fb);
-    drawText(fb, MSG_BOO, tx, 0, 2);
-    drawSprite(fb, GHOST[(f / 3) % 2], gx);
+    drawSprite(fb, GIFT_BOX, x);
+    drawSprite(fb, GIFT_LID, x);
     FRAME(STEP_MS);
   }
-  memcpy(bg, fb, WIDTH);
-  dissolve(bg, false);
-}
-
-// Bats flap across the sign
-static void bats() {
-  const uint8_t n = 4;
-  int x[n], y[n];
-  for (uint8_t i = 0; i < n; i++) {
-    x[i] = WIDTH + i * 12 + rnd(8);
-    y[i] = rnd(4);
-  }
-  for (int f = 0;; f++) {
+  for (int lid = -1; lid >= -3; lid--) {
     wipe(fb);
-    bool flying = false;
-    for (uint8_t i = 0; i < n; i++) {
-      if (f % (1 + i % 2) == 0) x[i]--;  // every other bat is slower
-      drawSprite(fb, BAT[((f + i) / 3) % 2], x[i], y[i] + ((f + i * 3) / 5) % 2);
-      if (x[i] > -8) flying = true;
-    }
-    FRAME(STEP_MS / 2);
-    if (!flying) return;
+    drawSprite(fb, GIFT_BOX, x);
+    drawSprite(fb, GIFT_LID, x, lid);
+    FRAME(80);
   }
-}
-
-// Three jack-o'-lanterns blink and flicker
-static void pumpkins() {
-  wipe(bg);
-  for (uint8_t i = 0; i < 3; i++) drawSprite(bg, PUMPKIN[0], 7 + i * 21);
-  wipe(fb);
-  dissolve(bg, true);
-  uint8_t shut[3] = {0};
-  for (uint8_t t = 0; t < 60; t++) {
+  confettiStart();
+  for (int t = 0; t < 45; t++) {
     wipe(fb);
-    for (uint8_t i = 0; i < 3; i++) {
-      if (shut[i]) shut[i]--;
-      else if (rnd(18) == 0) shut[i] = 3;
-      drawSprite(fb, PUMPKIN[shut[i] ? 1 : 0], 7 + i * 21);
-    }
-    if (rnd(25) == 0) wipe(fb);  // the candles gutter
+    drawSprite(fb, GIFT_BOX, x);
+    drawWave(fb, MSG_SURPRISE, x + 10, t);
+    confettiStep(t, 10, true);
     FRAME(60);
   }
-  memcpy(fb, bg, WIDTH);
+  memcpy(bg, fb, WIDTH);
   dissolve(bg, false);
 }
 
 static void interlude() {
   static uint8_t last = 255;
   uint8_t pick;
-  do pick = rnd(3); while (pick == last);
+  do pick = rnd(4); while (pick == last);
   last = pick;
-  if (pick == 0) ghostBoo();
-  else if (pick == 1) bats();
-  else pumpkins();
+  if (pick == 0) balloons();
+  else if (pick == 1) fireworks(5);
+  else if (pick == 2) gift();
+  else scenePowerPellet();
 }
 
-// BOO! shakes and glitches, then only eyes in the dark
+// Fireworks, then the big one scrolls by, then more fireworks
 static void sceneFinale() {
-  wipe(fb);
-  FRAME(500);
-  const int x0 = centered(MSG_BOO, 2);
-  for (uint8_t t = 0; t < 36; t++) {
-    bool shaking = t < 24;
+  fireworks(6);
+  const int w = textWidth(MSG_FINALE);
+  for (int x = WIDTH; x > -w; x--) {
     wipe(fb);
-    drawText(fb, MSG_BOO, x0 + (shaking ? (int)rnd(5) - 2 : 0), shaking && rnd(4) == 0, 2);
-    if (shaking && rnd(3) == 0) {  // glitch: one module jumps a row
-      uint8_t m = rnd(MODULES), up = rnd(2);
-      for (uint8_t c = m * 8; c < m * 8 + 8; c++) fb[c] = up ? fb[c] >> 1 : fb[c] << 1;
-    }
-    FRAME(shaking ? 60 : 100);
+    drawText(fb, MSG_FINALE, x);
+    FRAME(STEP_MS);
   }
-  memcpy(bg, fb, WIDTH);
-  dissolve(bg, false);
-  eyesInTheDark(60);
+  fireworks(4);
 }
 
 // ---------------------------------------------------------------- the show
@@ -418,9 +547,9 @@ static void play(void (*scene)()) {
 }
 
 void runShow() {
-  play(sceneWelcome);
-  play(scenePowerPellet);
-  play(sceneHappyHalloween);
+  play(sceneHappyBirthday);
+  play(sceneNames);
+  play(sceneCake);
   play(sceneJoke);
   play(interlude);
   play(sceneJoke);
