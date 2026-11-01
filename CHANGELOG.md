@@ -8,8 +8,10 @@ All notable changes to the sign are listed here. The format follows
 
 ### Changed
 - The sign now plays a birthday show for Paul and Larry: names doing the wave, balloons,
-  confetti, a cake whose candles blow out, fireworks, ten birthday jokes, and Pac-Man eating
-  the cake. The Halloween show is still in release 1.0.0.
+  confetti, a cake whose candles blow out and then get eaten (NOM! BURP!), fireworks, a
+  present, a party blower, a sing-along, and eighteen birthday jokes, each followed by a
+  parade of cupcake, present, party hat and balloon. The Halloween show (with Pac-Man) is
+  still in release 1.0.0.
 
 ### Added
 - 3D-printable bat-shaped door holder: the sign is the bat's body, the wings hide the UNO and

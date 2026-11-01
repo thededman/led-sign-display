@@ -5,19 +5,13 @@
 #include "messages.h"
 
 uint8_t fb[WIDTH];
-static uint8_t bg[WIDTH];  // what Pac-Man can eat: words and dots
+static uint8_t bg[WIDTH];  // a picture to fade in or out
 static bool stop;          // the platform asked to skip the rest of this scene
 
 #define STEP_MS 35  // one animation step
 
 // Shows fb, and leaves the current function if the scene is being skipped
 #define FRAME(ms) do { if (stop || !frame(ms)) { stop = true; return; } } while (0)
-
-static const char S200[] PROGMEM = "200";
-static const char S400[] PROGMEM = "400";
-static const char S800[] PROGMEM = "800";
-static const char S1600[] PROGMEM = "1600";
-static const char *const SCORES[] PROGMEM = { S200, S400, S800, S1600 };
 
 // ---------------------------------------------------------------- drawing
 
@@ -84,18 +78,12 @@ static void drawText(uint8_t *buf, const char *s, int x, int y = 0, uint8_t wide
 
 static int centered(const char *s, uint8_t wide = 1) { return (WIDTH - textWidth(s, wide)) / 2; }
 
-static void drawSprite(uint8_t *buf, const uint8_t *rows, int x, int y = 0, bool faceLeft = false) {
+static void drawSprite(uint8_t *buf, const uint8_t *rows, int x, int y = 0) {
   for (uint8_t r = 0; r < 8; r++) {
     uint8_t bits = pgm_read_byte(rows + r);
     for (uint8_t c = 0; c < 8; c++)
-      if (bits & (faceLeft ? 1 << c : 0x80 >> c)) setPixel(buf, x + c, y + r);
+      if (bits & (0x80 >> c)) setPixel(buf, x + c, y + r);
   }
-}
-
-// Pac-Man's mouth: open, half, shut, half, open...
-static const uint8_t *pacFrame(int step) {
-  uint8_t k = (step / 2) % 4;
-  return PAC[k == 3 ? 1 : k];
 }
 
 // ---------------------------------------------------------------- effects
@@ -112,23 +100,6 @@ static void dissolve(const uint8_t *target, bool lightUp) {
       else fb[x] &= ~bit;
     }
     if (i % 16 == 0) FRAME(40);
-  }
-}
-
-// Pac-Man runs across from px eating everything in bg, with ghosts on his tail
-static void chompAcross(bool toLeft, uint8_t ghosts, int px) {
-  const int dir = toLeft ? -1 : 1;
-  const int trail = ghosts ? 12 + (ghosts - 1) * 10 : 0;  // how far back the last ghost is
-  for (int s = 0;; s++, px += dir) {
-    for (int x = 0; x < WIDTH; x++)
-      if (toLeft ? x >= px + 4 : x < px + 4) bg[x] = 0;
-    memcpy(fb, bg, WIDTH);
-    drawSprite(fb, pacFrame(s), px, 0, toLeft);
-    for (uint8_t g = 0; g < ghosts; g++)
-      drawSprite(fb, GHOST[(s / 3) % 2], px - dir * (12 + g * 10), 0, toLeft);
-    FRAME(STEP_MS);
-    int last = px - dir * trail;
-    if (toLeft ? last + 8 <= 0 : last >= WIDTH) return;
   }
 }
 
@@ -159,50 +130,6 @@ static void dropOut(const char *s) {
     }
     FRAME(STEP_MS);
   }
-}
-
-// The message scrolls by with Pac-Man and his ghosts after it; then he gobbles the end of it
-static void scrollChase(const char *s, uint8_t ghosts) {
-  const int w = textWidth(s);
-  int tx = WIDTH, px = 0;
-  bool hungry = false;
-  for (int f = 0;; f++) {
-    if (f % 2 == 0) tx--;  // the words move every other frame
-    int tail = tx + w;
-    if (tail <= WIDTH / 3) hungry = true;  // everyone has read it by now
-    px = hungry ? px - 1 : tail + 3;
-    wipe(fb);
-    drawText(fb, s, tx);
-    for (int x = px + 4; x < WIDTH; x++)
-      if (x >= 0) fb[x] = 0;  // eaten
-    drawSprite(fb, pacFrame(f / 2), px, 0, true);
-    for (uint8_t g = 0; g < ghosts; g++)
-      drawSprite(fb, GHOST[(f / 6) % 2], px + 12 + g * 10, 0, true);
-    FRAME(STEP_MS / 2);
-    int last = px + (ghosts ? 12 + (ghosts - 1) * 10 : 0);
-    if (last + 8 <= 0) return;
-  }
-}
-
-// Pac-Man waddles back in, burps, then eats his own burp
-static void burp() {
-  const int stopAt = WIDTH - 20;
-  wipe(fb);
-  FRAME(500);
-  for (int px = WIDTH; px >= stopAt; px--) {
-    wipe(fb);
-    drawSprite(fb, pacFrame(px), px, 0, true);
-    FRAME(STEP_MS * 2);
-  }
-  wipe(bg);
-  drawText(bg, MSG_BURP, stopAt - 3 - textWidth(MSG_BURP));
-  for (int t = 0; t < 16; t++) {
-    memcpy(fb, bg, WIDTH);
-    drawSprite(fb, PAC[t < 10 ? 0 : 2], stopAt, t < 10 ? t % 2 : 0, true);
-    FRAME(t < 10 ? 70 : 120);
-  }
-  FRAME(600);
-  chompAcross(true, 0, stopAt);
 }
 
 // Text on row 1 with one letter at a time hopping up a row, like a crowd doing the wave
@@ -307,9 +234,50 @@ static void drawCake(uint8_t *buf, int x, bool lit) {
   }
 }
 
+// Everything on the sign bursts into confetti and flutters down off the bottom
+static void crumble() {
+  for (uint8_t t = 0; t < 50; t++) {
+    bool any = false;
+    for (int y = 7; y >= 0; y--) {
+      for (int x = 0; x < WIDTH; x++) {
+        if (!(fb[x] & (1 << y))) continue;
+        any = true;
+        if (rnd(3)) continue;  // pieces let go at different times
+        fb[x] &= ~(1 << y);
+        if (y < 7) setPixel(fb, x + (int)rnd(3) - 1, y + 1);
+      }
+    }
+    FRAME(60);
+    if (!any) return;
+  }
+}
+
+// One of the marchers in the birthday parade, bobbing along
+static void drawMarcher(uint8_t which, int x, int f) {
+  const int bob = -((f / 8 + which) % 2);  // up a row every other step
+  switch (which % 4) {
+    case 0: drawSprite(fb, CUPCAKE[(f / 6) % 2], x, bob); break;
+    case 1: drawSprite(fb, GIFT_BOX, x, bob); drawSprite(fb, GIFT_LID, x, bob); break;
+    case 2: drawSprite(fb, PARTY_HAT, x, bob); break;
+    default: drawSprite(fb, BALLOON[(f / 6) % 2], x, bob); break;
+  }
+}
+
+// The message scrolls by with a little birthday parade marching along behind it
+static void parade(const char *s, uint8_t marchers) {
+  const int w = textWidth(s), gap = 11;
+  for (int tx = WIDTH, f = 0; tx + w + 4 + marchers * gap > 0; f++) {
+    if (f % 2 == 0) tx--;  // the words move every other frame
+    wipe(fb);
+    drawText(fb, s, tx);
+    for (uint8_t i = 0; i < marchers; i++) drawMarcher(i, tx + w + 4 + i * gap, f);
+    FRAME(STEP_MS / 2);
+  }
+}
+
 // ---------------------------------------------------------------- scenes
 
-// Confetti, then HAPPY and BIRTHDAY drop in, and Pac-Man and the ghosts gobble it up
+// Confetti, then HAPPY and BIRTHDAY drop in, and BIRTHDAY bursts into confetti
 static void sceneHappyBirthday() {
   confettiStart();
   for (int t = 0; t < 45; t++) {
@@ -327,7 +295,7 @@ static void sceneHappyBirthday() {
     sparkle(MSG_BIRTHDAY);
     FRAME(70);
   }
-  chompAcross(false, 4, -8);
+  crumble();
 }
 
 // Each name does the wave: the first with balloons rising up the sides, the second in confetti
@@ -354,7 +322,7 @@ static void sceneNames() {
   }
 }
 
-// The cake: candles flicker, make a wish, blow them out, HOORAY! ...and Pac-Man eats the cake
+// The cake: candles flicker, make a wish, blow them out, HOORAY! ...then NOM NOM NOM, BURP!
 static void sceneCake() {
   const int middle = (WIDTH - 16) / 2, left = 4;
   wipe(bg);
@@ -396,74 +364,29 @@ static void sceneCake() {
     drawWave(fb, MSG_HOORAY, hoorayX, t);
     FRAME(60);
   }
-  wipe(bg);
-  drawCake(bg, left, false);
-  drawText(bg, MSG_HOORAY, hoorayX, 1);
-  chompAcross(true, 0, WIDTH);
-  burp();
-}
-
-// Pac-Man eats a line of dots with the ghosts behind him, then the power pellet turns the tables
-static void scenePowerPellet() {
-  const int pellet = WIDTH - 4;  // two columns wide
-  wipe(bg);
-  for (int x = 4; x < pellet - 3; x += 4) bg[x] = 0x18;
-  int px = -8, s = 0;
-  for (; px + 6 < pellet; px++, s++) {
-    for (int x = 0; x < WIDTH && x < px + 4; x++) bg[x] = 0;
-    memcpy(fb, bg, WIDTH);
-    if ((s / 4) % 2 == 0) fb[pellet] = fb[pellet + 1] = 0x3C;  // the power pellet blinks
-    drawSprite(fb, pacFrame(s), px);
-    for (uint8_t g = 0; g < 4; g++) drawSprite(fb, GHOST[(s / 3) % 2], px - 11 - g * 9);
-    FRAME(STEP_MS);
-  }
-
-  // Power pellet eaten: the ghosts turn and run, slowly, and Pac-Man hunts them down
-  int gx[4], eyes[4] = {0};  // ghost positions in quarter pixels; eaten ghosts' eyes heading home
-  for (uint8_t g = 0; g < 4; g++) gx[g] = (px - 11 - g * 9) * 4;
-  uint8_t caught = 0;  // ghosts are caught nearest first
-  for (s = 0;; s++) {
-    px--;
-    for (uint8_t g = 0; g < 4; g++) {
-      if (g < caught) eyes[g] += 2;
-      else gx[g]--;
-    }
-    if (caught < 4 && px - gx[caught] / 4 <= 4) {
-      const char *score = (const char *)pgm_read_ptr(&SCORES[caught]);
-      const int w = textWidth(score);
-      int x = gx[caught] / 4 + 4 - w / 2;
-      if (x < 0) x = 0;
+  for (int slice = 1; slice <= 4; slice++) {  // eaten from the right, a slice at a time
+    for (uint8_t t = 0; t < 9; t++) {
       wipe(fb);
-      for (uint8_t g = caught + 1; g < 4; g++) drawSprite(fb, SCARED[0], gx[g] / 4, 0, true);
-      for (uint8_t g = 0; g < caught; g++) drawSprite(fb, EYES, eyes[g]);
-      for (int c = x - 1; c <= x + w; c++)
-        if (c >= 0 && c < WIDTH) fb[c] = 0;  // a clear window so the score reads
-      drawText(fb, score, x);
-      FRAME(700);
-      eyes[caught] = gx[caught] / 4;
-      caught++;
+      if (slice < 4) drawCake(fb, left, false);
+      for (int x = left + 16 - slice * 4; x <= left + 16; x++) fb[x] = 0;
+      drawText(fb, MSG_NOM, beside + 2 + (slice % 2) * 18, t < 3 ? 1 : 0);  // NOM! pops up
+      FRAME(70);
     }
-    wipe(fb);
-    drawSprite(fb, pacFrame(s), px, 0, true);
-    for (uint8_t g = caught; g < 4; g++) drawSprite(fb, SCARED[(s / 3) % 2], gx[g] / 4, 0, true);
-    bool eyesOut = false;
-    for (uint8_t g = 0; g < caught; g++) {
-      drawSprite(fb, EYES, eyes[g]);
-      if (eyes[g] < WIDTH) eyesOut = true;
-    }
-    FRAME(STEP_MS);
-    if (px <= -8 && !eyesOut) return;
   }
+  const int burpX = centered(MSG_BURP, 2);
+  for (uint8_t t = 0; t < 20; t++) {
+    wipe(fb);
+    drawText(fb, MSG_BURP, burpX + (t < 8 ? (int)rnd(3) - 1 : 0), t < 8 ? t % 2 : 0, 2);
+    FRAME(70);
+  }
+  crumble();
 }
 
 static void sceneJoke() {
   static uint8_t next;
   const char *s = (const char *)pgm_read_ptr(&JOKES[next]);
   next = (next + 1) % JOKE_COUNT;
-  bool answer = pgm_read_byte(s) == '@';
-  if (answer) s++;
-  scrollChase(s, answer ? 0 : 1 + rnd(4));
-  if (answer) burp();
+  parade(s, 1 + rnd(4));
 }
 
 // Balloons float up past the sign
@@ -516,15 +439,74 @@ static void gift() {
   dissolve(bg, false);
 }
 
+// A party blower with its paper tube unrolled `len` pixels
+static void drawHorn(int len) {
+  for (int x = 0; x < 4; x++) {  // mouthpiece
+    setPixel(fb, x, 3);
+    setPixel(fb, x, 4);
+  }
+  for (int x = 4; x < 4 + len; x++) {  // striped paper tube
+    setPixel(fb, x, 3);
+    if (x % 2) setPixel(fb, x, 4);
+  }
+  const int c = 4 + len;  // the curl at the end
+  setPixel(fb, c, 3); setPixel(fb, c, 4);
+  setPixel(fb, c + 1, 2); setPixel(fb, c + 2, 2);
+  setPixel(fb, c + 3, 3); setPixel(fb, c + 3, 4);
+  setPixel(fb, c + 1, 5); setPixel(fb, c + 2, 5);
+}
+
+// The party blower unrolls with a TOOT! and curls back up, three times
+static void horn() {
+  const int full = 27, tootX = 4 + full + 6;
+  for (uint8_t toot = 0; toot < 3; toot++) {
+    for (int len = 0; len <= full; len += 3) {
+      wipe(fb);
+      drawHorn(len);
+      FRAME(30);
+    }
+    for (uint8_t t = 0; t < 12; t++) {
+      wipe(fb);
+      drawHorn(full);
+      drawText(fb, MSG_TOOT, tootX + (t < 4 ? (int)rnd(3) - 1 : 0), 1);
+      FRAME(60);
+    }
+    for (int len = full; len >= 0; len -= 3) {
+      wipe(fb);
+      drawHorn(len);
+      FRAME(30);
+    }
+    FRAME(200);
+  }
+}
+
+// Sing-along: the song scrolls across a little stage with a bouncing note at each end
+static void song() {
+  const int w = textWidth(MSG_SONG), left = 10, right = WIDTH - 10;
+  for (int tx = right, f = 0; tx + w > left; f++) {
+    if (f % 2 == 0) tx--;
+    wipe(fb);
+    drawText(fb, MSG_SONG, tx);
+    for (int x = 0; x < left; x++) fb[x] = 0;
+    for (int x = right; x < WIDTH; x++) fb[x] = 0;
+    drawSprite(fb, NOTES, 0, (f / 10) % 2);
+    drawSprite(fb, NOTES, WIDTH - 8, (f / 10 + 1) % 2);
+    FRAME(STEP_MS / 2);
+  }
+}
+
 static void interlude() {
   static uint8_t last = 255;
   uint8_t pick;
-  do pick = rnd(4); while (pick == last);
+  do pick = rnd(5); while (pick == last);
   last = pick;
-  if (pick == 0) balloons();
-  else if (pick == 1) fireworks(5);
-  else if (pick == 2) gift();
-  else scenePowerPellet();
+  switch (pick) {
+    case 0: balloons(); break;
+    case 1: fireworks(5); break;
+    case 2: gift(); break;
+    case 3: horn(); break;
+    default: song(); break;
+  }
 }
 
 // Fireworks, then the big one scrolls by, then more fireworks

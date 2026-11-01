@@ -3,17 +3,18 @@
 A 64×8 LED sign made of eight SainSmart MAX7219 8×8 modules in a row, run by an Arduino UNO.
 It plays a birthday show for Paul and Larry on a loop, about 80 seconds a pass:
 
-1. **Confetti**, then **HAPPY** and **BIRTHDAY** drop in, and Pac-Man and the ghosts eat it.
+1. **Confetti**, then **HAPPY** and **BIRTHDAY** drop in, and BIRTHDAY bursts into confetti.
 2. The **names** do the wave in double-width letters: **PAUL!** with balloons rising up the
    sides, then **LARRY!** in confetti.
 3. A **cake** with two flickering candles: **WISH!**, the candles blow out in puffs of smoke,
-   **HOORAY!**, and then Pac-Man eats the cake and burps.
-4. Two **jokes** scroll by with Pac-Man and the ghosts chasing them.
-5. Between jokes: **balloons**, **fireworks**, a **present** that pops open (SURPRISE!), or
-   Pac-Man's **power-pellet** chase.
+   **HOORAY!**, then it's eaten a slice at a time (**NOM!**), and a big **BURP!**.
+4. Two **jokes** scroll by (eighteen in all), each followed by a little parade: a cupcake
+   with a flickering candle, a present, a party hat and a balloon.
+5. Between jokes: **balloons**, **fireworks**, a **present** that pops open (SURPRISE!), a
+   **party blower** (TOOT!), or a **sing-along** between two bouncing music notes.
 6. **Finale**: fireworks around HAPPY BIRTHDAY PAUL & LARRY!
 
-The Halloween show from Oct 31, 2026 is release `v1.0.0`. To bring it back:
+The Halloween show from Oct 31, 2026 (with Pac-Man) is release `v1.0.0`. To bring it back:
 `git checkout v1.0.0 -- src/messages.h src/show.cpp src/sprites.h`, then upload.
 
 ## Wiring
@@ -145,9 +146,8 @@ http://localhost:8032/viewer.html.
 ## Changing the words
 
 Everything the sign says is in `src/messages.h`. The birthday names are the first lines,
-so the next birthday is a quick edit (names also appear in the finale line and a couple of
-jokes). Use capital letters, digits and `! ? . , ' - & : / ( )`. A joke that starts with
-`@` ends with Pac-Man burping.
+so the next birthday is a quick edit (names also appear in the finale, the song and a few
+jokes). Use capital letters, digits and `! ? . , ' - & : / ( )`.
 
 ## Previewing on a Mac
 

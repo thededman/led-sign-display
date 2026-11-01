@@ -101,7 +101,7 @@ if (q.has('sheet')) {
 int main(int argc, char **argv) {
   const char *out = argc > 1 ? argv[1] : "preview.html";
   std::srand(1031);
-  for (int pass = 0; pass < 5; pass++) runShow();  // five passes show all ten jokes
+  for (int pass = 0; pass < 9; pass++) runShow();  // nine passes show all eighteen jokes
 
   FILE *f = std::fopen(out, "w");
   if (!f) {
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 
   // LED current: about 40 mA per lit segment, 1/8 of the time, at (2*brightness+1)/32 duty
   double ma = peakLit * 40.0 / 8 * (2 * BRIGHTNESS + 1) / 32;
-  std::printf("%zu frames, %.1f s for five passes -> %s\n", frames.size(), total / 1000.0, out);
+  std::printf("%zu frames, %.1f s for nine passes -> %s\n", frames.size(), total / 1000.0, out);
   std::printf("busiest frame: %u of %d LEDs lit (%.0f%%), about %.0f mA at brightness %d\n",
               peakLit, WIDTH * 8, 100.0 * peakLit / (WIDTH * 8), ma, BRIGHTNESS);
   return 0;
