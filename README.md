@@ -95,8 +95,9 @@ skip to the next scene, or pause.
 (32-bit), then Edit settings: hostname `ledsign`, user `david`, your Wi-Fi (country US),
 time zone America/New_York, and SSH with public-key authentication.
 
-**2. Wiring.** The Pi's pins are 3.3 V. Try wiring straight to the display first (it can't
-hurt the Pi); if the test below stays dark or garbled, add an SN74AHCT125 level shifter.
+**2. Wiring.** Straight from the Pi to the display. The Pi's pins are 3.3 V, but on this
+sign that works (unlike the ESP32): the Pi's SPI drives the modules fine. If a different
+display stays dark or garbled, put an SN74AHCT125 level shifter in between.
 
 | Display IN | Pi Zero pin |
 |---|---|
@@ -117,8 +118,9 @@ into pin 2 and pin 3 to DIN; GPIO11 into pin 5 and pin 6 to CLK; GPIO8 into pin 
 pi/deploy.sh --setup
 ```
 
-That copies the program over, turns on SPI, installs the compiler, builds it and starts it
-at every boot (about 40 seconds after power-on). Later updates are just `pi/deploy.sh`.
+That copies the program over, turns on SPI, builds it on the Pi (about 45 seconds) and
+sets it to start at every boot (about 40 seconds after power-on). It asks for your Pi
+password for the steps that need `sudo`. Later updates are just `pi/deploy.sh`.
 
 **4. Check the wiring.** `ssh david@ledsign.local`, then `sudo systemctl stop led-sign`
 and `ledsign --test`: every module should show a clean square outline. Ctrl-C, then
