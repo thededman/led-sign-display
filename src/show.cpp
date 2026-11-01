@@ -384,6 +384,14 @@ static void sceneCake() {
 
 static void sceneJoke() {
   static uint8_t next;
+  static bool phoneTurn;  // a message from the phone takes every other joke's place
+  bool isNew;
+  const char *phone = phoneMessage(&isNew);
+  phoneTurn = !phoneTurn;
+  if (phone && phoneTurn) {
+    parade(phone, 1 + rnd(4));
+    return;
+  }
   const char *s = (const char *)pgm_read_ptr(&JOKES[next]);
   next = (next + 1) % JOKE_COUNT;
   parade(s, 1 + rnd(4));
@@ -524,6 +532,12 @@ static void sceneFinale() {
 // ---------------------------------------------------------------- the show
 
 static void play(void (*scene)()) {
+  bool isNew;
+  const char *phone = phoneMessage(&isNew);
+  if (phone && isNew) {  // a new message from the phone goes straight up, with the full parade
+    stop = false;
+    parade(phone, 4);
+  }
   stop = false;
   scene();
 }

@@ -1,0 +1,12 @@
+[Unit]
+Description=LED sign show
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/local/bin/ledsign
+User=@USER@
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

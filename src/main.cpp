@@ -37,6 +37,11 @@ bool frame(uint16_t ms) {
 
 uint32_t rnd(uint32_t n) { return n ? random(n) : 0; }
 
+const char *phoneMessage(bool *isNew) {  // the UNO has no phone page
+  *isNew = false;
+  return nullptr;
+}
+
 #ifdef FINDER
 
 // Orientation finder: tries the 8 ways a module's LEDs can be wired, 4 seconds each. Every module

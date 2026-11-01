@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#16161c">
+<title>LED Sign</title>
+<style>
+  :root {
+    --bg: #f5f3ef; --card: #ffffff; --text: #1d1d22; --muted: #6b6b73; --line: #dedad3;
+    --accent: #e0442a; --accent-text: #ffffff; --ok: #2f8a4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16161c; --card: #22222a; --text: #ececf0; --muted: #a0a0ab; --line: #34343e;
+            --accent: #ff5a3c; --accent-text: #16161c; --ok: #5cc27f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.5 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: 0.02em; }
+  .pill { font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line);
+          color: var(--muted); }
+  .pill.on { color: var(--ok); border-color: var(--ok); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+            padding: 16px; margin-bottom: 14px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
+  textarea { width: 100%; min-height: 84px; resize: vertical; padding: 10px 12px; font: inherit;
+             text-transform: uppercase; color: var(--text); background: var(--bg);
+             border: 1px solid var(--line); border-radius: 10px; }
+  textarea:focus, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 6px 0 12px; }
+  .row { display: flex; gap: 10px; }
+  button { flex: 1; min-height: 46px; font: inherit; font-weight: 600; border-radius: 10px;
+           border: 1px solid var(--line); background: var(--bg); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button:active { transform: translateY(1px); }
+  .now { font-size: 14px; margin-top: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .now strong { color: var(--text); font-weight: 600; }
+  .slider { display: flex; align-items: center; gap: 12px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); height: 32px; }
+  output { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 8px 16px;
+           border-radius: 999px; background: var(--text); color: var(--bg); font-size: 14px;
+           opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>LED Sign</h1>
+    <span id="state" class="pill">Connecting…</span>
+  </header>
+
+  <section>
+    <h2>Say something</h2>
+    <textarea id="message" maxlength="160" autocapitalize="characters" autocomplete="off"
+              placeholder="HAPPY BIRTHDAY!"></textarea>
+    <p class="hint">Letters, numbers and ! ? . , ' - &amp; : / ( ). It scrolls by straight away, then takes every other joke's turn.</p>
+    <div class="row">
+      <button class="primary" id="send">Show it</button>
+      <button id="clear">Clear</button>
+    </div>
+    <p class="now" id="current"></p>
+  </section>
+
+  <section>
+    <h2>Brightness</h2>
+    <div class="slider">
+      <input type="range" id="brightness" min="0" max="15" step="1" aria-label="Brightness">
+      <output id="level" for="brightness"></output>
+    </div>
+  </section>
+
+  <section>
+    <h2>Show</h2>
+    <div class="row">
+      <button id="skip">Next scene</button>
+      <button id="pause">Pause</button>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let settings = null;
+
+function render(s) {
+  settings = s;
+  $('state').textContent = s.paused ? 'Paused' : 'Showing';
+  $('state').classList.toggle('on', !s.paused);
+  $('pause').textContent = s.paused ? 'Resume' : 'Pause';
+  if (document.activeElement !== $('brightness')) $('brightness').value = s.brightness;
+  $('level').textContent = $('brightness').value;
+  $('current').innerHTML = '';
+  if (s.message) {
+    const label = document.createElement('span');
+    label.textContent = 'On the sign: ';
+    const text = document.createElement('strong');
+    text.textContent = s.message;
+    $('current').append(label, text);
+  }
+}
+
+function toast(text) {
+  $('toast').textContent = text;
+  $('toast').classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => $('toast').classList.remove('show'), 1500);
+}
+
+async function send(change, note) {
+  try {
+    const r = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                             body: JSON.stringify(change) });
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+    if (note) toast(note);
+  } catch (e) {
+    toast("Couldn't reach the sign");
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/settings', { cache: 'no-store' });
+    render(await r.json());
+  } catch (e) {
+    $('state').textContent = 'Offline';
+    $('state').classList.remove('on');
+  }
+}
+
+$('send').onclick = () => {
+  const text = $('message').value.trim();
+  if (!text) { toast('Type a message first'); $('message').focus(); return; }
+  send({ message: text }, 'Sent to the sign');
+  $('message').value = '';
+};
+$('clear').onclick = () => send({ message: '' }, 'Message cleared');
+$('skip').onclick = () => send({ skip: true }, 'Next scene');
+$('pause').onclick = () => send({ paused: !(settings && settings.paused) });
+
+let slide;
+$('brightness').oninput = () => {
+  $('level').textContent = $('brightness').value;
+  clearTimeout(slide);
+  slide = setTimeout(() => send({ brightness: Number($('brightness').value) }), 250);
+};
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

@@ -34,6 +34,11 @@ bool frame(uint16_t ms) {
 
 uint32_t rnd(uint32_t n) { return n ? (uint32_t)std::rand() % n : 0; }
 
+const char *phoneMessage(bool *isNew) {
+  *isNew = false;
+  return nullptr;
+}
+
 static const char PAGE_HEAD[] = R"(<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign Preview</title>

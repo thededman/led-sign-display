@@ -14,6 +14,8 @@ All notable changes to the sign are listed here. The format follows
   still in release 1.0.0.
 
 ### Added
+- Runs on a Raspberry Pi Zero W too, with a phone page over Wi-Fi: type a message for the
+  sign, change the brightness, skip a scene or pause. Starts by itself at power-on.
 - 3D-printable bat-shaped door holder: the sign is the bat's body, the wings hide the UNO and
   the power bank, and it hangs with Command strips. Prints in two halves on a 225 mm bed, with
   a quick fit-test piece to print first.

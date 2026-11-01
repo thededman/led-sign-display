@@ -2,3 +2,6 @@
 .vscode/
 tools/preview/build/
 .DS_Store
+pi/ledsign
+pi/ledsign-term
+__pycache__/

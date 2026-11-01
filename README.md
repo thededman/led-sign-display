@@ -85,6 +85,57 @@ if the cable enters at the right-hand end of the sign.
 pio run -e uno-finder -t upload
 ```
 
+## Running from a Raspberry Pi Zero W (with a phone page)
+
+The same show runs on a Pi Zero W, powered by a PiSugar battery board, and the Pi serves a
+page your phone can use over Wi-Fi: type a message for the sign, change the brightness,
+skip to the next scene, or pause.
+
+**1. SD card.** In Raspberry Pi Imager pick Raspberry Pi Zero, Raspberry Pi OS Lite
+(32-bit), then Edit settings: hostname `ledsign`, user `david`, your Wi-Fi (country US),
+time zone America/New_York, and SSH with public-key authentication.
+
+**2. Wiring.** The Pi's pins are 3.3 V. Try wiring straight to the display first (it can't
+hurt the Pi); if the test below stays dark or garbled, add an SN74AHCT125 level shifter.
+
+| Display IN | Pi Zero pin |
+|---|---|
+| VCC | 2 (5V) |
+| GND | 6 (GND) |
+| DIN | 19 (GPIO10, SPI MOSI) |
+| CLK | 23 (GPIO11, SPI SCLK) |
+| CS  | 24 (GPIO8, SPI CE0) |
+
+Pin 1 is the header corner nearest the SD card; odd pins are on the inside row. With an
+SN74AHCT125 (DIP-14): pin 14 to 5V, pin 7 to GND, pins 1, 4, 10, 13 and 12 to GND; GPIO10
+into pin 2 and pin 3 to DIN; GPIO11 into pin 5 and pin 6 to CLK; GPIO8 into pin 9 and pin
+8 to CS.
+
+**3. Install.** With the Pi on Wi-Fi, from this folder on the Mac:
+
+```bash
+pi/deploy.sh --setup
+```
+
+That copies the program over, turns on SPI, installs the compiler, builds it and starts it
+at every boot (about 40 seconds after power-on). Later updates are just `pi/deploy.sh`.
+
+**4. Check the wiring.** `ssh david@ledsign.local`, then `sudo systemctl stop led-sign`
+and `ledsign --test`: every module should show a clean square outline. Ctrl-C, then
+`sudo systemctl start led-sign`.
+
+**5. Phone page.** Open http://ledsign.local on a phone on the same Wi-Fi. A new message
+scrolls by straight away, then takes every other joke's turn until you clear it. Anyone on
+your Wi-Fi can use the page; there's no password.
+
+**Battery.** The PiSugar's 1200 mAh holds about 4.4 Wh and the Pi plus the LEDs use about
+1.5 W, so expect 2–3 hours. Plug the PiSugar's charging port into a USB charger to run all
+day.
+
+To try the Pi program on a Mac without a Pi: `make -C pi term` builds `pi/ledsign-term`,
+which draws the sign in the terminal, and `python3 pi/web/server.py --port 8033 --settings
+/tmp/settings` serves the page (run `ledsign-term` with `LEDSIGN_SETTINGS=/tmp/settings`).
+
 ## Plain case (3D printed)
 
 The quick option: a black frame around the display only, open at the back, with a Command
@@ -164,5 +215,7 @@ to try out new words or animations without the hardware.
 | `src/show.cpp` | All the animations |
 | `src/sprites.h` | Pac-Man, ghosts, bats, pumpkins (editable pixel art) |
 | `src/font.h` | 5×7 letters |
-| `src/matrix.cpp` | Talks to the MAX7219 chips |
+| `src/matrix.cpp` | Talks to the MAX7219 chips from the UNO |
+| `src/matrix_map.h` | How frame pixels map to the chips (shared with the Pi) |
+| `pi/` | The Pi program, phone page, services and deploy script |
 | `src/main.cpp` | Board setup, orientation finder, wiring test |

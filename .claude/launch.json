@@ -4,14 +4,38 @@
     {
       "name": "preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8031", "--directory", "tools/preview/build"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8031",
+        "--directory",
+        "tools/preview/build"
+      ],
       "port": 8031
     },
     {
       "name": "holder",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8032", "--directory", "holder"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8032",
+        "--directory",
+        "holder"
+      ],
       "port": 8032
+    },
+    {
+      "name": "phone-page",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "pi/web/server.py",
+        "--port",
+        "8033",
+        "--settings",
+        "tools/preview/build/settings"
+      ],
+      "port": 8033
     }
   ]
 }
