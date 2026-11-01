@@ -77,16 +77,18 @@ pio run -e uno-finder -t upload
 ## Plain case (3D printed)
 
 The quick option: a black frame around the display only, open at the back, with a Command
-strip pad at each end and a slot under the right-hand end where the cable comes out. The UNO
-and power bank stay outside.
+strip pad at each end. At the right-hand end a bay holds the sideways cable plug, and a slot
+underneath lets the wires out. The UNO and power bank stay outside.
 
 Print `holder/stl/case-left.stl` and `case-right.stl` together (load both into Cura and it
 places them side by side) plus `pins.stl`: about 1–1.5 hours and 64 g. Same Cura settings as
 the bat holder below: face down as exported, no supports. Then:
 
 1. Push two pins into one half (a drop of super glue holds them) and press the halves together.
-2. Lay the case face down and lower the LED strip in from the back, LEDs down, cable end at the
-   end with the slot. Feed the cable out through the slot and tape across the module backs.
+2. Lay the case face down and lower the LED strip in from the back, LEDs down, with the plug
+   in the bay. Feed the wires out through the slot under the bay, plug the blue jumper back in
+   across the middle joint (the left four modules go dark without it), and tape across the
+   module backs.
 3. One Command strip on each end pad, and press it to the door for 30 seconds.
 
 `python3 holder/case.py` rebuilds it; the sizes are at the top of the file.
