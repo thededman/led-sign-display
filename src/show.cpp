@@ -529,6 +529,36 @@ static void sceneFinale() {
   fireworks(4);
 }
 
+// Football scores: a few of today's games scroll by, a football before each. The favourite
+// team's game is in every time; the others take turns from one visit to the next.
+static void sceneScores() {
+  static uint8_t next;
+  const uint8_t count = scoreCount();
+  if (!count) return;
+  const char *games[3];
+  uint8_t n = 0;
+  const bool favourite = pgm_read_byte(scoreLine(0)) == '*';
+  if (favourite) games[n++] = scoreLine(0) + 1;
+  const uint8_t others = count - favourite;
+  for (uint8_t k = 0; k < others && n < 3; k++) games[n++] = scoreLine(favourite + (next + k) % others);
+  if (others) next = (next + n - favourite) % others;
+
+  int w = 0;
+  for (uint8_t i = 0; i < n; i++) w += 12 + textWidth(games[i]) + 8;
+  for (int x = WIDTH, f = 0; x + w > 0; f++) {
+    if (f % 2 == 0) x--;  // the words move every other frame
+    wipe(fb);
+    int cx = x;
+    for (uint8_t i = 0; i < n; i++) {
+      drawSprite(fb, FOOTBALL, cx, (f / 8 + i) % 2);  // each football bounces
+      cx += 12;
+      drawText(fb, games[i], cx);
+      cx += textWidth(games[i]) + 8;
+    }
+    FRAME(STEP_MS / 2);
+  }
+}
+
 // ---------------------------------------------------------------- the show
 
 static void play(void (*scene)()) {
@@ -542,13 +572,19 @@ static void play(void (*scene)()) {
   scene();
 }
 
+// Every other screen is the football scores, when there are games today
+static void playThenScores(void (*scene)()) {
+  play(scene);
+  play(sceneScores);
+}
+
 void runShow() {
-  play(sceneHappyBirthday);
-  play(sceneNames);
-  play(sceneCake);
-  play(sceneJoke);
-  play(interlude);
-  play(sceneJoke);
-  play(interlude);
-  play(sceneFinale);
+  playThenScores(sceneHappyBirthday);
+  playThenScores(sceneNames);
+  playThenScores(sceneCake);
+  playThenScores(sceneJoke);
+  playThenScores(interlude);
+  playThenScores(sceneJoke);
+  playThenScores(interlude);
+  playThenScores(sceneFinale);
 }

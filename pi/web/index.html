@@ -41,6 +41,13 @@
   .slider { display: flex; align-items: center; gap: 12px; }
   input[type=range] { flex: 1; accent-color: var(--accent); height: 32px; }
   output { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .check { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--accent); }
+  select { width: 100%; min-height: 44px; margin: 8px 0 4px; padding: 0 10px; font: inherit; color: var(--text);
+           background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+  .games { list-style: none; margin: 12px 0 0; padding: 0; font-variant-numeric: tabular-nums; }
+  .games li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 15px; }
+  .games li.fav { font-weight: 700; }
   #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 8px 16px;
            border-radius: 999px; background: var(--text); color: var(--bg); font-size: 14px;
            opacity: 0; transition: opacity .2s; pointer-events: none; }
@@ -75,6 +82,48 @@
   </section>
 
   <section>
+    <h2>NFL scores</h2>
+    <label class="check"><input type="checkbox" id="scores"> Show today's scores every other screen</label>
+    <label for="team" class="hint">Favorite team: its game shows every time</label>
+    <select id="team">
+        <option value="">No favorite</option>
+        <option value="ARI">Arizona Cardinals</option>
+        <option value="ATL">Atlanta Falcons</option>
+        <option value="BAL">Baltimore Ravens</option>
+        <option value="BUF">Buffalo Bills</option>
+        <option value="CAR">Carolina Panthers</option>
+        <option value="CHI">Chicago Bears</option>
+        <option value="CIN">Cincinnati Bengals</option>
+        <option value="CLE">Cleveland Browns</option>
+        <option value="DAL">Dallas Cowboys</option>
+        <option value="DEN">Denver Broncos</option>
+        <option value="DET">Detroit Lions</option>
+        <option value="GB">Green Bay Packers</option>
+        <option value="HOU">Houston Texans</option>
+        <option value="IND">Indianapolis Colts</option>
+        <option value="JAX">Jacksonville Jaguars</option>
+        <option value="KC">Kansas City Chiefs</option>
+        <option value="LV">Las Vegas Raiders</option>
+        <option value="LAC">Los Angeles Chargers</option>
+        <option value="LAR">Los Angeles Rams</option>
+        <option value="MIA">Miami Dolphins</option>
+        <option value="MIN">Minnesota Vikings</option>
+        <option value="NE">New England Patriots</option>
+        <option value="NO">New Orleans Saints</option>
+        <option value="NYG">New York Giants</option>
+        <option value="NYJ">New York Jets</option>
+        <option value="PHI">Philadelphia Eagles</option>
+        <option value="PIT">Pittsburgh Steelers</option>
+        <option value="SF">San Francisco 49ers</option>
+        <option value="SEA">Seattle Seahawks</option>
+        <option value="TB">Tampa Bay Buccaneers</option>
+        <option value="TEN">Tennessee Titans</option>
+        <option value="WSH">Washington Commanders</option>
+    </select>
+    <ul class="games" id="games"></ul>
+  </section>
+
+  <section>
     <h2>Show</h2>
     <div class="row">
       <button id="skip">Next scene</button>
@@ -94,6 +143,8 @@ function render(s) {
   $('state').classList.toggle('on', !s.paused);
   $('pause').textContent = s.paused ? 'Resume' : 'Pause';
   if (document.activeElement !== $('brightness')) $('brightness').value = s.brightness;
+  $('scores').checked = !!s.scores;
+  if (document.activeElement !== $('team')) $('team').value = s.team || '';
   $('level').textContent = $('brightness').value;
   $('current').innerHTML = '';
   if (s.message) {
@@ -124,10 +175,25 @@ async function send(change, note) {
   }
 }
 
+function renderGames(games) {
+  $('games').replaceChildren(...games.map(g => {
+    const li = document.createElement('li');
+    li.textContent = g.line;
+    li.classList.toggle('fav', g.favourite);
+    return li;
+  }));
+  if (!games.length) {
+    const li = document.createElement('li');
+    li.textContent = settings && !settings.scores ? 'Scores are off' : 'No games today';
+    $('games').append(li);
+  }
+}
+
 async function refresh() {
   try {
     const r = await fetch('/api/settings', { cache: 'no-store' });
     render(await r.json());
+    renderGames(await (await fetch('/api/scores', { cache: 'no-store' })).json());
   } catch (e) {
     $('state').textContent = 'Offline';
     $('state').classList.remove('on');
@@ -143,6 +209,9 @@ $('send').onclick = () => {
 $('clear').onclick = () => send({ message: '' }, 'Message cleared');
 $('skip').onclick = () => send({ skip: true }, 'Next scene');
 $('pause').onclick = () => send({ paused: !(settings && settings.paused) });
+$('scores').onchange = () => send({ scores: $('scores').checked }, $('scores').checked ? 'Scores on' : 'Scores off')
+  .then(() => setTimeout(refresh, 2500));
+$('team').onchange = () => send({ team: $('team').value }, 'Favorite saved').then(() => setTimeout(refresh, 2500));
 
 let slide;
 $('brightness').oninput = () => {

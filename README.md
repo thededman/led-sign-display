@@ -130,6 +130,13 @@ and `ledsign --test`: every module should show a clean square outline. Ctrl-C, t
 scrolls by straight away, then takes every other joke's turn until you clear it. Anyone on
 your Wi-Fi can use the page; there's no password.
 
+**NFL scores.** On the Pi, every other screen is a scores ticker for today's NFL games
+(`BUF 17 @ KC 21 Q3 4:32`, `NYG 10 @ DAL 24 FINAL`, `MIA @ NE 1:00 PM`), three games a
+visit, taking turns. `pi/scores.py` checks ESPN's public scoreboard (unofficial, no key)
+every 30 seconds while games are on. The phone page turns scores on or off, shows today's
+games, and sets a favorite team whose game appears on every scores screen. With no games
+today there are no scores screens.
+
 **Battery.** The PiSugar's 1200 mAh holds about 4.4 Wh and the Pi plus the LEDs use about
 1.5 W, so expect 2–3 hours. Plug the PiSugar's charging port into a USB charger to run all
 day.

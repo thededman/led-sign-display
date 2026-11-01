@@ -14,6 +14,9 @@ All notable changes to the sign are listed here. The format follows
   still in release 1.0.0.
 
 ### Added
+- On the Pi, every other screen shows today's NFL scores (live, final and upcoming), three
+  games at a time with a bouncing football. The phone page switches them on or off, lists
+  today's games and picks a favorite team whose game shows every time.
 - Runs on a Raspberry Pi Zero W too, with a phone page over Wi-Fi: type a message for the
   sign, change the brightness, skip a scene or pause. Starts by itself at power-on.
 - 3D-printable bat-shaped door holder: the sign is the bat's body, the wings hide the UNO and

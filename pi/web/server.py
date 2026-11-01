@@ -2,7 +2,7 @@
 """The sign's phone page: serves index.html and reads and writes the settings file that the
 show (ledsign) watches. Standard library only.
 
-    python3 server.py --port 80 --settings /var/lib/led-sign/settings
+    python3 server.py --port 80 --settings /var/lib/led-sign/settings --scores /var/lib/led-sign/scores
 """
 import argparse
 import json
@@ -12,8 +12,8 @@ import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PAGE = (pathlib.Path(__file__).parent / "index.html").read_bytes()
-DEFAULTS = {"brightness": 2, "paused": 0, "skip": 0, "message": ""}
-NUMBERS = ("brightness", "paused", "skip")
+DEFAULTS = {"brightness": 2, "paused": 0, "skip": 0, "message": "", "scores": 1, "team": ""}
+NUMBERS = ("brightness", "paused", "skip", "scores")
 LETTERS = set(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ")  # the sign's font
 MAX_MESSAGE = 160
 
@@ -25,7 +25,7 @@ def load(path):
             key, _, value = line.partition("=")
             if key in NUMBERS:
                 settings[key] = int(value or 0)
-            elif key == "message":
+            elif key in ("message", "team"):
                 settings[key] = value
     except (OSError, ValueError):
         pass
@@ -49,8 +49,18 @@ def clean(message):
     return "".join(c for c in text if c in LETTERS)[:MAX_MESSAGE]
 
 
+def todays_games(path):
+    """The game lines scores.py keeps, favourite first (marked with a leading '*')."""
+    try:
+        lines = pathlib.Path(path).read_text().splitlines()
+    except OSError:
+        return []
+    return [{"line": l.lstrip("*"), "favourite": l.startswith("*")} for l in lines if l]
+
+
 class Handler(BaseHTTPRequestHandler):
     settings_path = ""
+    scores_path = ""
 
     def reply(self, code, body, kind="application/json"):
         self.send_response(code)
@@ -65,6 +75,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, PAGE, "text/html; charset=utf-8")
         elif self.path == "/api/settings":
             self.reply(200, json.dumps(load(self.settings_path)).encode())
+        elif self.path == "/api/scores":
+            self.reply(200, json.dumps(todays_games(self.scores_path)).encode())
         else:
             self.reply(404, b'{"error": "not found"}')
 
@@ -88,6 +100,10 @@ class Handler(BaseHTTPRequestHandler):
             settings["skip"] += 1
         if "message" in change:
             settings["message"] = clean(change["message"])
+        if "scores" in change:
+            settings["scores"] = 1 if change["scores"] else 0
+        if "team" in change:
+            settings["team"] = "".join(c for c in str(change["team"]).upper() if c.isalpha())[:4]
         save(self.settings_path, settings)
         self.reply(200, json.dumps(settings).encode())
 
@@ -99,8 +115,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=80)
     parser.add_argument("--settings", default="/var/lib/led-sign/settings")
+    parser.add_argument("--scores", default="/var/lib/led-sign/scores")
     args = parser.parse_args()
     Handler.settings_path = args.settings
+    Handler.scores_path = args.scores
     if not os.path.exists(args.settings):
         save(args.settings, DEFAULTS)
     ThreadingHTTPServer(("", args.port), Handler).serve_forever()

@@ -42,6 +42,9 @@ const char *phoneMessage(bool *isNew) {  // the UNO has no phone page
   return nullptr;
 }
 
+uint8_t scoreCount() { return 0; }  // the UNO has no Wi-Fi for scores
+const char *scoreLine(uint8_t) { return nullptr; }
+
 #ifdef FINDER
 
 // Orientation finder: tries the 8 ways a module's LEDs can be wired, 4 seconds each. Every module

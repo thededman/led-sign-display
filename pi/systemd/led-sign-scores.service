@@ -1,0 +1,13 @@
+[Unit]
+Description=LED sign football scores
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/led-sign/scores.py --out /var/lib/led-sign/scores --settings /var/lib/led-sign/settings
+User=@USER@
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

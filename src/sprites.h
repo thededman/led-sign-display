@@ -80,3 +80,14 @@ static const uint8_t NOTES[8] PROGMEM = {
   0b11100111,
   0, 0,
 };
+
+// A football, laces up
+static const uint8_t FOOTBALL[8] PROGMEM = {
+  0,
+  0b00111100,
+  0b01010110,
+  0b10111101,
+  0b01010110,
+  0b00111100,
+  0, 0,
+};

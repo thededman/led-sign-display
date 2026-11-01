@@ -21,13 +21,14 @@ install: ledsign
 	install -d /opt/led-sign/web
 	install -m 644 web/index.html /opt/led-sign/web/
 	install -m 755 web/server.py /opt/led-sign/web/
+	install -m 755 scores.py /opt/led-sign/
 	install -d -o $(SIGN_USER) /var/lib/led-sign
-	for unit in led-sign led-sign-web; do \
+	for unit in led-sign led-sign-web led-sign-scores; do \
 	  sed "s/@USER@/$(SIGN_USER)/" systemd/$$unit.service > /etc/systemd/system/$$unit.service; \
 	done
 	systemctl daemon-reload
-	systemctl enable led-sign led-sign-web
-	systemctl restart led-sign led-sign-web
+	systemctl enable led-sign led-sign-web led-sign-scores
+	systemctl restart led-sign led-sign-web led-sign-scores
 
 clean:
 	rm -f ledsign ledsign-term

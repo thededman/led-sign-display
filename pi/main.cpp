@@ -2,7 +2,8 @@
 //   ledsign            run the show
 //   ledsign --test     a square on every module, to check the wiring
 // The phone page writes a small key=value file (brightness, paused, skip, message) at
-// /var/lib/led-sign/settings, or wherever LEDSIGN_SETTINGS points.
+// /var/lib/led-sign/settings, or wherever LEDSIGN_SETTINGS points; scores.py keeps today's
+// football games, one per line, at /var/lib/led-sign/scores (or LEDSIGN_SCORES).
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -21,6 +22,7 @@ using Clock = std::chrono::steady_clock;
 using std::chrono::milliseconds;
 
 static const char *settingsPath = "/var/lib/led-sign/settings";
+static const char *scoresPath = "/var/lib/led-sign/scores";
 static std::string lastSettings;  // file contents as last read, to spot changes
 static Clock::time_point checkedAt;
 
@@ -30,6 +32,18 @@ static long skipCount = -1;  // the page bumps this to skip the current scene
 static bool skipping;
 static char message[161];
 static bool messageNew;
+
+// Lines are rewritten in place, so a game being scrolled never points at freed memory
+static char scores[16][48];
+static uint8_t scoreLines;
+
+static void readScores() {
+  std::ifstream in(scoresPath);
+  uint8_t n = 0;
+  for (std::string line; n < 16 && std::getline(in, line);)
+    if (!line.empty()) std::snprintf(scores[n++], sizeof scores[0], "%s", line.c_str());
+  scoreLines = n;
+}
 
 static void readSettings() {
   std::ifstream in(settingsPath);
@@ -66,6 +80,7 @@ static void checkSettings() {
   if (Clock::now() - checkedAt < milliseconds(300)) return;
   checkedAt = Clock::now();
   readSettings();
+  readScores();
 }
 
 bool frame(uint16_t ms) {
@@ -100,10 +115,16 @@ const char *phoneMessage(bool *isNew) {
   return message[0] ? message : nullptr;
 }
 
+uint8_t scoreCount() { return scoreLines; }
+
+const char *scoreLine(uint8_t i) { return i < scoreLines ? scores[i] : nullptr; }
+
 int main(int argc, char **argv) {
   if (const char *path = std::getenv("LEDSIGN_SETTINGS")) settingsPath = path;
+  if (const char *path = std::getenv("LEDSIGN_SCORES")) scoresPath = path;
   matrixBegin(ORIENTATION, brightness);
   readSettings();
+  readScores();
   messageNew = false;  // a message left from before shows in turn, not straight away
 
   if (argc > 1 && std::strcmp(argv[1], "--test") == 0) {
