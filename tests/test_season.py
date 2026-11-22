@@ -83,6 +83,11 @@ class Decide(unittest.TestCase):
         self.assertEqual(season.decide(T(2026, 12, 10, 9), [], "auto")["show"], "christmas")
         self.assertIn(("christmas", "Christmas"), season.SHOWS)
 
+    def test_new_year(self):
+        self.assertEqual(season.decide(T(2026, 12, 28, 9), [], "auto")["show"], "newyear")
+        self.assertEqual(season.decide(T(2027, 1, 1, 0, 0), [], "auto")["show"], "newyear")
+        self.assertIn(("newyear", "New Year"), season.SHOWS)
+
     def test_decide_picked_birthday_uses_next_names(self):
         b = season.parse_birthdays("03-02 SAM\n")
         d = season.decide(T(2026, 11, 22, 9), b, "birthday")

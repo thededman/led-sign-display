@@ -138,6 +138,18 @@ int main() {
   runShow();
   assert(frames > 1000);
 
+  // the New Year show: a full pass, with a clock (the year rolls over) and without
+  assert(std::strcmp(resolveShow("newyear")->name, "newyear") == 0);
+  todayShow = "newyear";
+  setClock(2026, 12, 28, 20, 0, 0);
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+  haveClock = false;
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+
   // the date helpers
   setClock(2026, 12, 20, 9, 0, 0);
   assert(daysUntil(12, 25) == 5);

@@ -37,6 +37,7 @@ void parade(const char *s, uint8_t marchers);  // with the show's marchers behin
 void confettiStart();
 void confettiStep(int f, uint8_t count, bool refill);  // moves the first `count` pieces and draws them
 void fireworks(uint8_t count);  // a few rockets climb, burst and sparkle out
+void partyHorn(const char *toot);  // a party blower unrolls with `toot` (PROGMEM) three times
 
 // The date, from the platform's clock
 int16_t daysUntil(uint8_t month, uint8_t day);  // 0 on the day; -1 without a clock

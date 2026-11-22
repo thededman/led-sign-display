@@ -234,46 +234,8 @@ static void gift() {
   dissolve(bg, false);
 }
 
-// A party blower with its paper tube unrolled `len` pixels
-static void drawHorn(int len) {
-  for (int x = 0; x < 4; x++) {  // mouthpiece
-    setPixel(fb, x, 3);
-    setPixel(fb, x, 4);
-  }
-  for (int x = 4; x < 4 + len; x++) {  // striped paper tube
-    setPixel(fb, x, 3);
-    if (x % 2) setPixel(fb, x, 4);
-  }
-  const int c = 4 + len;  // the curl at the end
-  setPixel(fb, c, 3); setPixel(fb, c, 4);
-  setPixel(fb, c + 1, 2); setPixel(fb, c + 2, 2);
-  setPixel(fb, c + 3, 3); setPixel(fb, c + 3, 4);
-  setPixel(fb, c + 1, 5); setPixel(fb, c + 2, 5);
-}
-
 // The party blower unrolls with a TOOT! and curls back up, three times
-static void horn() {
-  const int full = 27, tootX = 4 + full + 6;
-  for (uint8_t toot = 0; toot < 3; toot++) {
-    for (int len = 0; len <= full; len += 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    for (uint8_t t = 0; t < 12; t++) {
-      wipe(fb);
-      drawHorn(full);
-      drawText(fb, MSG_TOOT, tootX + (t < 4 ? (int)rnd(3) - 1 : 0), 1);
-      FRAME(60);
-    }
-    for (int len = full; len >= 0; len -= 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    FRAME(200);
-  }
-}
+static void horn() { partyHorn(MSG_TOOT); }
 
 // Sing-along: the song scrolls across a little stage with a bouncing note at each end
 static void song() {
