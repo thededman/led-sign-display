@@ -325,7 +325,7 @@ assert(frames < fullPass / 2);   // the test's frame() hook swaps todayShow at f
 **Files:**
 - Modify: `README.md` ("Make it yours" paths now `src/shows/…`; Option A: `UNO_SHOW` in `src/config.h`; Option B: the phone page's Show and Birthdays sections; project layout table), `docs/images/phone-page.png` (re-rendered with made-up names), `CHANGELOG.md` (`[1.4.0]`), `TIMELOG.md`
 
-- [ ] **Step 1: Full check:** `tests/run.sh` passes; `tools/preview/build.sh` (Thanksgiving, unchanged); `make -C pi term` no warnings; UNO: `python3 -m venv $SCRATCH/pio && $SCRATCH/pio/bin/pip install -q platformio && $SCRATCH/pio/bin/pio run -e uno` succeeds (flash and RAM within limits; note the numbers); `grep -rniE 'paul|larry' --exclude-dir=.git .` finds nothing.
+- [ ] **Step 1: Full check:** `tests/run.sh` passes; `tools/preview/build.sh` (Thanksgiving, unchanged); `make -C pi term` no warnings; UNO: `python3 -m venv $SCRATCH/pio && $SCRATCH/pio/bin/pip install -q platformio && $SCRATCH/pio/bin/pio run -e uno` succeeds (flash and RAM within limits; note the numbers); a search of the tree for the family's real names finds nothing.
 - [ ] **Step 2: Docs and pictures** as listed; the phone page screenshot shows Show "Automatic: Thanksgiving" and two made-up birthdays.
 - [ ] **Step 3: Changelog `[1.4.0]`** for people using the sign: picks its show by date; birthdays on the phone page; pick a show from the phone; birthday show back. Time log line.
 - [ ] **Step 4: Commit, push, open the PR** (`Closes #10`, "Part of #6"), using the template; say the Pi deploy and a watch of one pass on the sign are needed before Friday, and what wasn't tested.

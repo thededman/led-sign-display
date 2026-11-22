@@ -6,6 +6,27 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-22
+
+### Added
+- The sign picks its show by the date on its own (on the Pi, once it has the time from the
+  internet): Thanksgiving through Thanksgiving Day, with more holidays as their shows arrive.
+  Offline, it keeps the show it had.
+- Birthdays on the phone page: add a name and date (and the year born, if you like), and the
+  Birthday show plays all day on that date, with the names doing the wave, in the song and in
+  the finale, and "ROBIN TURNS 60!" when you gave the year.
+- Pick a show from the phone page; it stays on until you set it back to Automatic. The page
+  always says which show is on and whether it was picked.
+- The Birthday show is back, with new jokes that work for anyone.
+- `pi/deploy.sh` keeps a copy of the birthdays on your computer and puts them back if the
+  Pi's SD card is ever re-flashed.
+- `tests/run.sh` runs the tests.
+
+### Changed
+- On the phone page, Next scene and Pause are now under "Controls".
+- Each show has its own files in `src/shows/`. The UNO plays the one set as `UNO_SHOW` in
+  `src/config.h`.
+
 ## [1.3.1] - 2026-11-22
 
 ### Changed
@@ -84,7 +105,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/thededman/led-sign-display/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/thededman/led-sign-display/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/thededman/led-sign-display/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/thededman/led-sign-display/compare/v1.1.1...v1.2.0
