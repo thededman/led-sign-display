@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#16161c">
+<meta name="sign-page" content="__PAGE_VERSION__">
 <title>LED Sign</title>
 <style>
   :root {
@@ -201,7 +202,16 @@ function renderShow(s) {
   $('backAuto').hidden = !s.show || s.show === 'auto';  // a picked show stays until this is tapped
 }
 
+// After the sign is updated its page changes: reload once to get the new one
+function reloadIfUpdated(s) {
+  const mine = document.querySelector('meta[name="sign-page"]').content;
+  if (!s.page || s.page === mine || sessionStorage.getItem('reloadedFor') === s.page) return;
+  sessionStorage.setItem('reloadedFor', s.page);
+  location.reload();
+}
+
 function render(s) {
+  reloadIfUpdated(s);
   settings = s;
   $('state').textContent = s.paused ? 'Paused' : 'Showing';
   $('state').classList.toggle('on', !s.paused);

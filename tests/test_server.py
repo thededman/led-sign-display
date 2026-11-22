@@ -1,4 +1,5 @@
 """Tests for the phone page server's show pick and birthdays."""
+import json
 import pathlib
 import sys
 import tempfile
@@ -53,6 +54,24 @@ class Server(unittest.TestCase):
                         urllib.request.urlopen(request, timeout=5)
                     self.assertEqual(caught.exception.code, 400)
                 self.assertEqual(bdays.read_text(), "11-01 ALEX\n")
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+
+    def test_settings_carry_the_page_version(self):
+        """An open phone page reloads itself when this changes, i.e. after the sign is updated."""
+        self.assertRegex(server.PAGE_VERSION, r"^[0-9a-f]{12}$")
+        with tempfile.TemporaryDirectory() as d:
+            server.Handler.settings_path = str(pathlib.Path(d) / "settings")
+            server.Handler.today_path = str(pathlib.Path(d) / "today")
+            httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+            threading.Thread(target=httpd.serve_forever, daemon=True).start()
+            try:
+                url = f"http://127.0.0.1:{httpd.server_address[1]}/api/settings"
+                with urllib.request.urlopen(url, timeout=5) as reply:
+                    self.assertEqual(json.load(reply)["page"], server.PAGE_VERSION)
+                with urllib.request.urlopen(url.replace("/api/settings", "/"), timeout=5) as reply:
+                    self.assertIn(f'content="{server.PAGE_VERSION}"', reply.read().decode())
             finally:
                 httpd.shutdown()
                 httpd.server_close()
