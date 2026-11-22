@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Keeps a file of today's NFL games up to date for the sign, from ESPN's public scoreboard
-(unofficial, no key needed). Standard library only.
+(unofficial, no key needed), and decides which show the sign plays today (season.py), writing
+it to the today file. Standard library only.
 
     python3 scores.py --out /var/lib/led-sign/scores --settings /var/lib/led-sign/settings
-    python3 scores.py --once        print today's lines and stop
+    python3 scores.py --once        print today's lines and show, and stop
 
 One game per line, away team first: "BUF 17 @ KC 21 Q3 4:32", "NYG 10 @ DAL 24 FINAL",
 "MIA @ NE 1:00 PM". The favourite team's game (team= in the settings) comes first, marked
@@ -15,10 +16,13 @@ import datetime
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
+
+import season
 
 URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
 ORDER = {"in": 0, "post": 1, "pre": 2}
@@ -33,6 +37,39 @@ def read_settings(path):
     except OSError:
         pass
     return settings
+
+
+def read_text(path):
+    try:
+        return pathlib.Path(path).read_text()
+    except OSError:
+        return ""
+
+
+def clock_synced():
+    """True once the Pi's clock has been set from the internet (always true on a Mac)."""
+    try:
+        result = subprocess.run(["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
+                                capture_output=True, text=True, timeout=10)
+    except FileNotFoundError:
+        return True
+    except subprocess.TimeoutExpired:
+        return False
+    return result.stdout.strip() == "yes"
+
+
+def update_today(today_path, settings_path, birthdays_path, now, synced):
+    """Writes today's show to the today file; returns True if the file changed. With the clock
+    not yet synced (an offline reboot) the file is left alone, so the sign keeps its show."""
+    if not synced:
+        return False
+    pick = read_settings(settings_path).get("show", "auto")
+    birthdays = season.parse_birthdays(read_text(birthdays_path))
+    text = season.today_text(season.decide(now, birthdays, pick))
+    if read_text(today_path) == text:
+        return False
+    write(today_path, text.splitlines())
+    return True
 
 
 def fetch():
@@ -97,40 +134,57 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="/var/lib/led-sign/scores")
     parser.add_argument("--settings", default="/var/lib/led-sign/settings")
-    parser.add_argument("--once", action="store_true", help="print today's lines and stop")
+    parser.add_argument("--today", default="/var/lib/led-sign/today")
+    parser.add_argument("--birthdays", default="/var/lib/led-sign/birthdays")
+    parser.add_argument("--once", action="store_true", help="print today's lines and show, and stop")
     args = parser.parse_args()
 
     if args.once:
-        team = read_settings(args.settings).get("team", "")
-        print("\n".join(todays_lines(fetch(), team)) or "(no games today)")
+        settings = read_settings(args.settings)
+        birthdays = season.parse_birthdays(read_text(args.birthdays))
+        print(season.today_text(season.decide(datetime.datetime.now(), birthdays, settings.get("show", "auto"))),
+              end="")
+        print("\n".join(todays_lines(fetch(), settings.get("team", ""))) or "(no games today)")
         return
 
     last_ok = time.monotonic()
+    next_fetch = 0.0
+    decided_minute = None
+    watched = None  # the settings and birthdays files as last seen
     while True:
-        settings = read_settings(args.settings)
-        wait = 300
-        if settings.get("scores", "1") == "0":
-            write(args.out, [])
-        else:
+        now = datetime.datetime.now()
+        files = (read_text(args.settings), read_text(args.birthdays))
+        minute = now.replace(second=0, microsecond=0)
+        if files != watched or minute != decided_minute:  # once a minute, and when they change
             try:
-                lines = todays_lines(fetch(), settings.get("team", ""))
-                write(args.out, lines)
-                last_ok = time.monotonic()
-                live = any(" Q" in l or " OT" in l or "HALFTIME" in l or " END " in l
-                           for l in lines if "FINAL" not in l)
-                wait = 30 if live else 120 if lines else 600
-            except Exception as error:  # keep going through Wi-Fi drops and ESPN hiccups
-                print(f"scores: {error}", file=sys.stderr, flush=True)
-                if time.monotonic() - last_ok > 15 * 60:
-                    write(args.out, [])  # don't leave old scores up for long
-                wait = 60
-        # wake up early if the settings change (scores switched on or off, new favourite team)
-        before = pathlib.Path(args.settings).read_text() if os.path.exists(args.settings) else ""
-        for _ in range(wait):
-            time.sleep(1)
-            now = pathlib.Path(args.settings).read_text() if os.path.exists(args.settings) else ""
-            if now != before:
-                break
+                update_today(args.today, args.settings, args.birthdays, now, clock_synced())
+            except Exception as error:  # never let the calendar stop the scores
+                print(f"today: {error}", file=sys.stderr, flush=True)
+            decided_minute = minute
+        if watched is not None and files[0] != watched[0]:
+            next_fetch = 0.0  # scores switched on or off, or a new favourite: fetch now
+        watched = files
+
+        if time.monotonic() >= next_fetch:
+            settings = read_settings(args.settings)
+            wait = 300
+            if settings.get("scores", "1") == "0":
+                write(args.out, [])
+            else:
+                try:
+                    lines = todays_lines(fetch(), settings.get("team", ""))
+                    write(args.out, lines)
+                    last_ok = time.monotonic()
+                    live = any(" Q" in l or " OT" in l or "HALFTIME" in l or " END " in l
+                               for l in lines if "FINAL" not in l)
+                    wait = 30 if live else 120 if lines else 600
+                except Exception as error:  # keep going through Wi-Fi drops and ESPN hiccups
+                    print(f"scores: {error}", file=sys.stderr, flush=True)
+                    if time.monotonic() - last_ok > 15 * 60:
+                        write(args.out, [])  # don't leave old scores up for long
+                    wait = 60
+            next_fetch = time.monotonic() + wait
+        time.sleep(1)
 
 
 if __name__ == "__main__":
