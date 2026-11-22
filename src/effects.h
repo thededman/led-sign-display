@@ -34,6 +34,9 @@ void dropOut(const char *s);
 void drawWave(uint8_t *buf, const char *s, int x, int t, uint8_t wide = 1);
 void crumble();
 void parade(const char *s, uint8_t marchers);  // with the show's marchers behind the words
+void confettiStart();
+void confettiStep(int f, uint8_t count, bool refill);  // moves the first `count` pieces and draws them
+void fireworks(uint8_t count);  // a few rockets climb, burst and sparkle out
 
 // The date, from the platform's clock
 int16_t daysUntil(uint8_t month, uint8_t day);  // 0 on the day; -1 without a clock
