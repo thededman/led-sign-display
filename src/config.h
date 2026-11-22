@@ -32,7 +32,9 @@
 #define SHOW_CHRISTMAS 3
 #define SHOW_NEWYEAR 4
 #ifdef ARDUINO
-  #define UNO_SHOW SHOW_THANKSGIVING
+  #ifndef UNO_SHOW  // or build with PLATFORMIO_BUILD_FLAGS=-DUNO_SHOW=SHOW_CHRISTMAS
+    #define UNO_SHOW SHOW_THANKSGIVING
+  #endif
   #define WANT_SHOW(s) (UNO_SHOW == SHOW_##s)
 #else
   #define WANT_SHOW(s) 1

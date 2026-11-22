@@ -6,6 +6,21 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-22
+
+### Added
+- A Christmas show, from the day after Thanksgiving to Dec 25: snow, MERRY CHRISTMAS!, Santa's
+  sleigh and reindeer (HO HO HO!), how many sleeps are left, a tree with twinkling lights and
+  presents, a snowman who shivers, a gingerbread man on the run, jingling bells, a snow day,
+  18 Christmas jokes and a finale.
+- A New Year show, from Dec 26 to Jan 1: HAPPY NEW YEAR!, the year rolling over, a champagne
+  cork popping and glasses clinking (CHEERS!), fireworks, a party blower, WOO-HOO!, 18
+  resolution jokes and a finale.
+- On New Year's Eve, whatever is playing, the sign counts down the last couple of minutes to
+  midnight, the final ten seconds in big digits in step with the Pi's clock, then HAPPY NEW
+  YEAR! with fireworks.
+- Both shows can be picked on the phone page, and both run on the UNO too (`UNO_SHOW`).
+
 ## [1.4.2] - 2026-11-22
 
 ### Changed
@@ -118,7 +133,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/thededman/led-sign-display/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/thededman/led-sign-display/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/thededman/led-sign-display/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/thededman/led-sign-display/compare/v1.3.1...v1.4.0
