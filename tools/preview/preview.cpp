@@ -4,13 +4,16 @@
 //   preview.html?t=12.5       paused at 12.5 s
 //   preview.html?sheet=0-30   a still every 0.5 s from 0 to 30 s (&every=250 for every 250 ms)
 // With PREVIEW_SCORES pointing at a file of game lines (like the Pi's scores file), the
-// scores screens show up too.
+// scores screens show up too. With PREVIEW_TODAY pointing at a today file (like the Pi's,
+// e.g. tools/preview/samples/birthday.today), it plays that day's show.
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <cstdlib>
 #include <string>
 #include <vector>
 #include "show.h"
+#include "today.h"
 
 struct Frame {
   unsigned ms;
@@ -43,6 +46,10 @@ const char *phoneMessage(bool *isNew) {
 }
 
 static std::vector<std::string> scores;  // sample games, if PREVIEW_SCORES names a file
+
+static Today todayValues;  // from PREVIEW_TODAY, if set
+
+const char *today(const char *key) { return todayValue(todayValues, key); }
 
 uint8_t scoreCount() { return scores.size(); }
 const char *scoreLine(uint8_t i) { return i < scores.size() ? scores[i].c_str() : nullptr; }
@@ -114,6 +121,11 @@ if (q.has('sheet')) {
 int main(int argc, char **argv) {
   const char *out = argc > 1 ? argv[1] : "preview.html";
   std::srand(1031);
+  if (const char *path = std::getenv("PREVIEW_TODAY")) {
+    std::ifstream in(path);
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    parseToday(text.c_str(), &todayValues);
+  }
   if (const char *path = std::getenv("PREVIEW_SCORES")) {
     std::ifstream in(path);
     for (std::string line; std::getline(in, line);)

@@ -120,6 +120,8 @@ uint8_t scoreCount() { return scoreLines; }
 
 const char *scoreLine(uint8_t i) { return i < scoreLines ? scores[i] : nullptr; }
 
+const char *today(const char *) { return ""; }
+
 int main(int argc, char **argv) {
   if (const char *path = std::getenv("LEDSIGN_SETTINGS")) settingsPath = path;
   if (const char *path = std::getenv("LEDSIGN_SCORES")) scoresPath = path;

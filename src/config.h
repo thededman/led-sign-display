@@ -24,3 +24,14 @@
 
 // LED brightness 0-15. Low is easier on the power bank and still bright at night.
 #define BRIGHTNESS 2
+
+// The shows. The Pi and the Mac preview hold them all and play the one the day calls for; on the
+// UNO only one fits, so pick it here.
+#define SHOW_THANKSGIVING 1
+#define SHOW_BIRTHDAY 2
+#ifdef ARDUINO
+  #define UNO_SHOW SHOW_THANKSGIVING
+  #define WANT_SHOW(s) (UNO_SHOW == SHOW_##s)
+#else
+  #define WANT_SHOW(s) 1
+#endif

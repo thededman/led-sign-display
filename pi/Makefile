@@ -4,8 +4,8 @@
 
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra
 CXXFLAGS += -I../src
-SHOW = ../src/show.cpp
-DEPS = main.cpp $(SHOW) $(wildcard ../src/*.h)
+SHOW = ../src/effects.cpp ../src/show.cpp ../src/today.cpp $(wildcard ../src/shows/*.cpp)
+DEPS = main.cpp $(SHOW) $(wildcard ../src/*.h ../src/shows/*.h)
 SIGN_USER ?= $(SUDO_USER)
 
 ledsign: $(DEPS) matrix_spidev.cpp

@@ -5,3 +5,4 @@ tools/preview/build/
 pi/ledsign
 pi/ledsign-term
 __pycache__/
+tests/build/

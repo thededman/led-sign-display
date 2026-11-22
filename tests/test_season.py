@@ -95,5 +95,12 @@ class Decide(unittest.TestCase):
                          "show=birthday\nwhy=auto\nnames=ALEX & ROBIN\nturning=\n")
 
 
+class TodayFile(unittest.TestCase):
+    def test_sample_matches_writer(self):
+        """tests/today.sample is what the sign's C++ reader is tested against."""
+        decision = {"show": "birthday", "why": "auto", "names": "ALEX & ROBIN", "turning": "ROBIN TURNS 60!"}
+        self.assertEqual(season.today_text(decision), (ROOT / "tests" / "today.sample").read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

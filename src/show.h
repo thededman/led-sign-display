@@ -1,4 +1,4 @@
-// The Halloween show. It draws into fb; the board (or the Mac preview) puts fb on the LEDs.
+// The shows. They draw into fb; the board (or the Mac preview) puts fb on the LEDs.
 #pragma once
 #include <stdint.h>
 #include "config.h"
@@ -14,5 +14,16 @@ const char *phoneMessage(bool *isNew);
 // favourite team's game. None on the UNO.
 uint8_t scoreCount();
 const char *scoreLine(uint8_t i);
+// The day's values from the Pi's today file ("show", "why", "names", "turning"), or "" (never
+// null; the UNO has none). The text may change between frames, but the pointer stays valid.
+const char *today(const char *key);
 
-void runShow();  // one full pass of the show
+void runShow();  // one full pass of the show the day calls for
+
+// The shows the sign holds (src/show.cpp)
+struct ShowEntry {
+  const char *name;
+  void (*run)();
+};
+const ShowEntry *resolveShow(const char *name);  // an unknown or empty name: the first show
+bool showChanged();  // the today file now names a different show from the one playing

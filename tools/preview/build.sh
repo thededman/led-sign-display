@@ -3,5 +3,6 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p build
-clang++ -std=c++17 -O2 -Wall -Wextra -I ../../src preview.cpp ../../src/show.cpp -o build/preview
+clang++ -std=c++17 -O2 -Wall -Wextra -I ../../src -o build/preview preview.cpp \
+  ../../src/effects.cpp ../../src/show.cpp ../../src/today.cpp ../../src/shows/*.cpp
 ./build/preview build/preview.html
