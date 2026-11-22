@@ -123,11 +123,13 @@ int main(int argc, char **argv) {
   std::srand(1031);
   if (const char *path = std::getenv("PREVIEW_TODAY")) {
     std::ifstream in(path);
+    if (!in) std::fprintf(stderr, "can't read PREVIEW_TODAY file %s\n", path);
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     parseToday(text.c_str(), &todayValues);
   }
   if (const char *path = std::getenv("PREVIEW_SCORES")) {
     std::ifstream in(path);
+    if (!in) std::fprintf(stderr, "can't read PREVIEW_SCORES file %s\n", path);
     for (std::string line; std::getline(in, line);)
       if (!line.empty()) scores.push_back(line);
   }

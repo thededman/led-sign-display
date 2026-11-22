@@ -54,6 +54,29 @@ int main() {
   runShow();
   assert(frames > 1000);
 
+  // the birthday show is there too
+  assert(std::strcmp(resolveShow("birthday")->name, "birthday") == 0);
+
+  // a change of show mid-pass ends the pass early
+  todayShow = "thanksgiving";
+  switchAt = -1;
+  frames = 0;
+  runShow();
+  const int fullPass = frames;
+  todayShow = "thanksgiving";
+  switchAt = 300;
+  switchTo = "birthday";
+  frames = 0;
+  runShow();
+  assert(frames < fullPass / 2);
+  switchAt = -1;
+
+  // the birthday show plays a full pass with names, and without any
+  todayShow = "birthday";
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+
   // the today file, as the Python writer writes it
   Today t;
   const std::string sample = readFile("tests/today.sample");

@@ -4,10 +4,14 @@
 #include "show.h"
 
 void runThanksgiving();
+void runBirthday();
 
 static const ShowEntry SHOWS[] = {
 #if WANT_SHOW(THANKSGIVING)
   {"thanksgiving", runThanksgiving},
+#endif
+#if WANT_SHOW(BIRTHDAY)
+  {"birthday", runBirthday},
 #endif
 };
 
