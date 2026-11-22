@@ -49,8 +49,20 @@ bool localTime(LocalTime *t) {
   return true;
 }
 
+// What was on the sign at chosen moments: ms after setClock()
+static uint64_t elapsed;
+static uint64_t shotAt[3];
+static uint8_t shots[3][WIDTH];
+static bool shotTaken[3];
+
 bool frame(uint16_t ms) {
   frames++;
+  for (int i = 0; i < 3; i++)
+    if (!shotTaken[i] && shotAt[i] >= elapsed && shotAt[i] < elapsed + ms) {
+      std::memcpy(shots[i], fb, WIDTH);
+      shotTaken[i] = true;
+    }
+  elapsed += ms;
   clockMs += ms;
   if (frames == switchAt) {  // the today file changes: the platform ends the scene
     todayShow = switchTo;
@@ -131,6 +143,26 @@ int main() {
   assert(daysUntil(3, 1) == 2);
   haveClock = false;
   assert(daysUntil(12, 25) == -1 && msToNewYear() == -1 && newYearNumber() == 0);
+
+  // New Year's Eve: the countdown runs on time, inside whatever show is playing
+  setClock(2026, 12, 31, 23, 58, 0);
+  elapsed = 0;
+  const uint64_t moments[3] = {110500, 119500, 120500};  // 23:59:50.5, 23:59:59.5, 00:00:00.5
+  for (int i = 0; i < 3; i++) {
+    shotAt[i] = moments[i];
+    shotTaken[i] = false;
+  }
+  todayShow = "thanksgiving";
+  runShow();
+  runShow();
+  assert(shotTaken[0] && shotTaken[1] && shotTaken[2]);
+  uint8_t ten[WIDTH] = {0}, one[WIDTH] = {0};
+  drawText(ten, "10", centered("10", 2), 0, 2);
+  drawText(one, "1", centered("1", 2), 0, 2);
+  assert(std::memcmp(shots[0], ten, WIDTH) == 0);
+  assert(std::memcmp(shots[1], one, WIDTH) == 0);
+  assert(std::memcmp(shots[2], one, WIDTH) != 0);  // midnight: not still on 1
+  haveClock = false;
 
   // the today file, as the Python writer writes it
   Today t;

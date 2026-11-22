@@ -313,7 +313,81 @@ uint16_t newYearNumber() {
 
 // ---------------------------------------------------------------- running scenes
 
+#ifndef ARDUINO  // the UNO has no clock, so no countdown
+
+// Writes a number of whole seconds as "1:42", or just "9" under a minute when bare
+static void writeTime(char *buf, int32_t secs, bool bare) {
+  uint8_t i = 0;
+  const int32_t m = secs / 60, s = secs % 60;
+  if (bare && m == 0) {
+    if (s >= 10) buf[i++] = '0' + s / 10;
+    buf[i++] = '0' + s % 10;
+  } else {
+    if (m >= 10) buf[i++] = '0' + m / 10;
+    buf[i++] = '0' + m % 10;
+    buf[i++] = ':';
+    buf[i++] = '0' + s / 10;
+    buf[i++] = '0' + s % 10;
+  }
+  buf[i] = 0;
+}
+
+// New Year's Eve: the time left ticks down, the last ten seconds count down in big digits in
+// step with the clock, and at midnight HAPPY NEW YEAR! with fireworks
+void newYearCountdown() {
+  char buf[8];
+  for (int f = 0; msToNewYear() > 10000; f++) {  // 2:30 ... 0:11, with twinkles either side
+    writeTime(buf, (msToNewYear() + 999) / 1000, false);
+    wipe(fb);
+    drawText(fb, buf, centered(buf, 2), 0, 2);
+    if (f % 4 == 0) {
+      memset(bg, 0, WIDTH);  // new twinkles every few frames
+      for (uint8_t i = 0; i < 4; i++) setPixel(bg, i % 2 ? WIDTH - 1 - rnd(6) : rnd(6), rnd(8));
+    }
+    for (int x = 0; x < WIDTH; x++) fb[x] |= bg[x];
+    FRAME(100);
+  }
+  for (int32_t left; (left = msToNewYear()) > 0;) {  // 10 ... 1, each on its own second
+    writeTime(buf, (left + 999) / 1000, true);
+    wipe(fb);
+    drawText(fb, buf, centered(buf, 2), 0, 2);
+    FRAME(50);
+  }
+  // Midnight
+  confettiStart();
+  for (int t = 0; t < 30; t++) {
+    wipe(fb);
+    drawText(fb, "HAPPY", centered("HAPPY", 2), 0, 2);
+    confettiStep(t, 24, true);
+    FRAME(60);
+  }
+  fireworks(6);
+  dropIn("NEW YEAR!");
+  FRAME(1500);
+  const uint16_t year = newYearNumber();
+  if (year) {
+    char digits[6] = {0};
+    for (int i = 3, y = year; i >= 0; i--, y /= 10) digits[i] = '0' + y % 10;
+    for (int t = 0; t < 40; t++) {
+      wipe(fb);
+      drawWave(fb, digits, centered(digits, 2), t, 2);
+      FRAME(60);
+    }
+  }
+  fireworks(6);
+  fireworks(6);
+}
+#endif
+
 void play(void (*scene)()) {
+#ifndef ARDUINO
+  const int32_t left = msToNewYear();
+  if (left > 0 && left <= 150000) {  // whatever is playing, the countdown starts on time
+    sceneStopped = false;
+    newYearCountdown();
+    return;
+  }
+#endif
   if (showChanged()) return;  // the day's show changed: the rest of this pass is skipped
   bool isNew;
   const char *phone = phoneMessage(&isNew);
