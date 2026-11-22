@@ -139,102 +139,61 @@ static void drawWave(uint8_t *buf, const char *s, int x, int t, uint8_t wide = 1
   for (char c; (c = pgm_read_byte(s)); s++, k++) x += drawChar(buf, c, x, k == hop ? 0 : 1, wide) + wide;
 }
 
-// Double width if the text fits that way
-static uint8_t widest(const char *s) { return textWidth(s, 2) <= WIDTH ? 2 : 1; }
-
-// A couple of twinkles in the empty columns either side of centred text
-static void sparkle(const char *s) {
-  const int x0 = centered(s), w = textWidth(s);
-  for (uint8_t i = 0; i < 2; i++) {
-    int x = rnd(WIDTH - w - 2);
-    if (x >= x0 - 1) x += w + 2;  // skip over the text
-    setPixel(fb, x, rnd(8));
-  }
-}
-
-// Confetti fluttering down the sign
+// Little autumn leaves drifting down the sign
 static struct {
   int8_t x[24], y[24];
-} confetti;
+} leaves;
 
-static void confettiStart() {
+static void leavesStart() {
   for (uint8_t i = 0; i < 24; i++) {
-    confetti.x[i] = rnd(WIDTH);
-    confetti.y[i] = -(int8_t)rnd(10);
+    leaves.x[i] = rnd(WIDTH);
+    leaves.y[i] = -(int8_t)rnd(10);
   }
 }
 
-// Moves the first `count` pieces on by one frame and draws them; with `refill`, pieces that
-// reach the bottom start again at the top
-static void confettiStep(int f, uint8_t count, bool refill) {
+// Moves the first `count` leaves on by one frame and draws them, each two pixels that tip as
+// it sways; with `refill`, leaves that reach the bottom start again at the top
+static void leavesStep(int f, uint8_t count, bool refill) {
   for (uint8_t i = 0; i < count; i++) {
-    if (f % (1 + i % 3) == 0) confetti.y[i]++;
-    if (confetti.y[i] > 7 && refill) {
-      confetti.y[i] = -(int8_t)rnd(4);
-      confetti.x[i] = rnd(WIDTH);
+    if (f % (2 + i % 3) == 0) leaves.y[i]++;  // leaves drift down slowly
+    if (leaves.y[i] > 7 && refill) {
+      leaves.y[i] = -(int8_t)rnd(4);
+      leaves.x[i] = rnd(WIDTH);
     }
-    if (rnd(4) == 0) confetti.x[i] += (int)rnd(3) - 1;
-    setPixel(fb, confetti.x[i], confetti.y[i]);
+    const bool tip = (f / 4 + i) % 2;  // swaying side to side
+    if (f % 4 == 0) leaves.x[i] += tip ? 1 : -1;
+    setPixel(fb, leaves.x[i], leaves.y[i]);
+    setPixel(fb, leaves.x[i] + 1, leaves.y[i] + (tip ? 1 : -1));
   }
 }
 
-// A firework launched `age` frames ago: a rocket climbs to (x, y), bursts, then sparkles out
-static void drawFirework(int x, int y, int age) {
-  static const int8_t DX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-  static const int8_t DY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-  const int rise = 7 - y;
-  if (age < 0) return;
-  if (age < rise) {
-    setPixel(fb, x, 7 - age);
-    setPixel(fb, x, 8 - age);
-    return;
-  }
-  const int r = age - rise + 1;
-  if (r > 8) return;
-  for (uint8_t d = 0; d < 8; d++) {
-    for (int k = r - 1; k <= r && k <= 4; k++) {
-      if (k < 1 || (r > 4 && rnd(3))) continue;  // after the burst, only a few sparkles
-      int stretch = DY[d] == 0 ? k / 2 : 0;       // a wider burst sideways
-      setPixel(fb, x + DX[d] * (k + stretch), y + DY[d] * k);
-    }
-  }
-}
-
-static void fireworks(uint8_t count) {
-  int8_t x[6], y[6];
-  int start[6];
-  for (uint8_t i = 0; i < count; i++) {
-    x[i] = 6 + rnd(WIDTH - 12);
-    y[i] = 2 + rnd(3);
-    start[i] = i * 7 + rnd(4);
-  }
-  const int end = start[count - 1] + 15;
-  for (int f = 0; f < end; f++) {
-    wipe(fb);
-    for (uint8_t i = 0; i < count; i++) drawFirework(x[i], y[i], f - start[i]);
-    FRAME(50);
-  }
-}
-
-// A two-candle birthday cake, 16 wide, with its left edge at x; candles are at x + 4 and x + 11
-static void drawCake(uint8_t *buf, int x, bool lit) {
+// A pumpkin pie, 16 wide, with its left edge at x: two dollops of whipped cream on top, the
+// filling, a fluted crust and the dish
+static void drawPie(uint8_t *buf, int x) {
   for (int c = 0; c < 16; c++) {
-    setPixel(buf, x + c, 4);                                       // icing
-    if (c % 3 != 2) setPixel(buf, x + c, 5);                       // drips
-    if (c == 0 || c == 15 || c % 5 == 2) setPixel(buf, x + c, 6);  // sides and sprinkles
+    setPixel(buf, x + c, 4);                                       // top of the filling
+    if (c == 0 || c == 15 || c % 5 == 2) setPixel(buf, x + c, 5);  // sides and spice
+    if (c % 2 == 0) setPixel(buf, x + c, 6);                       // fluted crust
   }
-  for (int c = -1; c <= 16; c++) setPixel(buf, x + c, 7);         // plate
-  for (int cx = x + 4; cx <= x + 11; cx += 7) {
+  for (int c = 1; c < 15; c++) setPixel(buf, x + c, 7);           // dish
+  for (int cx = x + 4; cx <= x + 11; cx += 7) {                   // whipped cream
     setPixel(buf, cx, 2);
-    setPixel(buf, cx, 3);
-    if (lit) {
-      setPixel(buf, cx, 1);
-      if (rnd(3) == 0) setPixel(buf, cx, 0);  // the flame flickers taller
-    }
+    for (int c = cx - 1; c <= cx + 1; c++) setPixel(buf, c, 3);
   }
 }
 
-// Everything on the sign bursts into confetti and flutters down off the bottom
+// Goalposts at the right-hand end: uprights, a crossbar on row 5 and the post below
+static void drawGoalposts() {
+  const int l = WIDTH - 12, r = WIDTH - 4;
+  for (int y = 0; y <= 5; y++) {
+    setPixel(fb, l, y);
+    setPixel(fb, r, y);
+  }
+  for (int x = l; x <= r; x++) setPixel(fb, x, 5);
+  for (int y = 6; y < 8; y++) setPixel(fb, (l + r) / 2, y);
+}
+
+// Everything on the sign crumbles into bits that flutter down off the bottom
 static void crumble() {
   for (uint8_t t = 0; t < 50; t++) {
     bool any = false;
@@ -252,18 +211,18 @@ static void crumble() {
   }
 }
 
-// One of the marchers in the birthday parade, bobbing along
+// One of the marchers in the Thanksgiving parade
 static void drawMarcher(uint8_t which, int x, int f) {
   const int bob = -((f / 8 + which) % 2);  // up a row every other step
   switch (which % 4) {
-    case 0: drawSprite(fb, CUPCAKE[(f / 6) % 2], x, bob); break;
-    case 1: drawSprite(fb, GIFT_BOX, x, bob); drawSprite(fb, GIFT_LID, x, bob); break;
-    case 2: drawSprite(fb, PARTY_HAT, x, bob); break;
-    default: drawSprite(fb, BALLOON[(f / 6) % 2], x, bob); break;
+    case 0: drawSprite(fb, TURKEY[(f / 6) % 2], x); break;  // the turkey walks instead
+    case 1: drawSprite(fb, PILGRIM_HAT, x, bob); break;
+    case 2: drawSprite(fb, LEAF, x, bob); break;
+    default: drawSprite(fb, FOOTBALL, x, bob); break;
   }
 }
 
-// The message scrolls by with a little birthday parade marching along behind it
+// The message scrolls by with a little Thanksgiving parade marching along behind it
 static void parade(const char *s, uint8_t marchers) {
   const int w = textWidth(s), gap = 11;
   for (int tx = WIDTH, f = 0; tx + w + 4 + marchers * gap > 0; f++) {
@@ -277,97 +236,82 @@ static void parade(const char *s, uint8_t marchers) {
 
 // ---------------------------------------------------------------- scenes
 
-// Confetti, then HAPPY and BIRTHDAY drop in, and BIRTHDAY bursts into confetti
-static void sceneHappyBirthday() {
-  confettiStart();
-  for (int t = 0; t < 45; t++) {
+// Leaves fall, HAPPY / THANKS / GIVING! drop in one after another, and the words crumble away
+static void sceneHappyThanksgiving() {
+  leavesStart();
+  for (int t = 0; t < 50; t++) {
     wipe(fb);
-    confettiStep(t, 24, t < 15);
+    leavesStep(t, 24, t < 20);
     FRAME(50);
   }
   dropIn(MSG_HAPPY);
-  FRAME(1000);
+  FRAME(800);
   dropOut(MSG_HAPPY);
-  dropIn(MSG_BIRTHDAY);
+  dropIn(MSG_THANKS);
+  FRAME(600);
+  dropOut(MSG_THANKS);
+  dropIn(MSG_GIVING);
   memcpy(bg, fb, WIDTH);
-  for (uint8_t t = 0; t < 30; t++) {
+  leavesStart();
+  for (int t = 0; t < 40; t++) {
     memcpy(fb, bg, WIDTH);
-    sparkle(MSG_BIRTHDAY);
-    FRAME(70);
+    leavesStep(t, 8, true);
+    FRAME(60);
   }
   crumble();
 }
 
-// Each name does the wave: the first with balloons rising up the sides, the second in confetti
-static void sceneNames() {
-  uint8_t wide = widest(NAME1);
-  int x = centered(NAME1, wide);
-  for (int t = 0; t < 60; t++) {
+// A turkey struts in, gobbles, and struts off
+static void sceneTurkey() {
+  const int stopAt = WIDTH - 16;
+  const int tx = stopAt - 4 - textWidth(MSG_GOBBLE);
+  int f = 0;
+  for (int x = WIDTH; x >= stopAt; x--, f++) {
     wipe(fb);
-    drawWave(fb, NAME1, x, t, wide);
-    drawSprite(fb, BALLOON[(t / 4) % 2], -1, 8 - t / 3);
-    drawSprite(fb, BALLOON[(t / 4 + 1) % 2], WIDTH - 7, 12 - t / 3);
-    FRAME(60);
+    drawSprite(fb, TURKEY[(f / 3) % 2], x);
+    FRAME(STEP_MS * 2);
   }
-  dropIn(MSG_AND);
-  FRAME(500);
-  wide = widest(NAME2);
-  x = centered(NAME2, wide);
-  confettiStart();
-  for (int t = 0; t < 60; t++) {
+  for (uint8_t t = 0; t < 36; t++) {
+    const bool gobbling = (t / 6) % 2 == 0;  // gobbles in bursts
     wipe(fb);
-    drawWave(fb, NAME2, x, t, wide);
-    confettiStep(t, 16, true);
-    FRAME(60);
-  }
-}
-
-// The cake: candles flicker, make a wish, blow them out, HOORAY! ...then NOM NOM NOM, BURP!
-static void sceneCake() {
-  const int middle = (WIDTH - 16) / 2, left = 4;
-  wipe(bg);
-  drawCake(bg, middle, true);
-  wipe(fb);
-  dissolve(bg, true);
-  for (uint8_t t = 0; t < 25; t++) {
-    wipe(fb);
-    drawCake(fb, middle, true);
-    FRAME(80);
-  }
-  for (int x = middle; x >= left; x--) {
-    wipe(fb);
-    drawCake(fb, x, true);
-    FRAME(STEP_MS);
-  }
-  const int beside = left + 17, room = WIDTH - beside;  // the space to the right of the cake
-  const int wishX = beside + (room - textWidth(MSG_WISH)) / 2;
-  for (uint8_t t = 0; t < 40; t++) {
-    wipe(fb);
-    drawCake(fb, left, true);
-    drawWave(fb, MSG_WISH, wishX, t);
+    drawText(fb, MSG_GOBBLE, tx + (gobbling ? (int)rnd(3) - 1 : 0), gobbling ? t % 2 : 0);
+    drawSprite(fb, TURKEY[0], stopAt, gobbling ? -(t % 2) : 0);  // head bobbing
     FRAME(70);
   }
-  for (uint8_t t = 0; t < 14; t++) {  // blown out: a puff of smoke drifts off each candle
+  for (int x = stopAt; x > -8; x--, f++) {
     wipe(fb);
-    drawCake(fb, left, false);
-    drawText(fb, MSG_WISH, wishX, 1);
-    for (int k = 0; k < 2; k++) {
-      int age = t - k * 2;
-      if (age >= 0 && age < 10) setPixel(fb, left + 4 + k * 7 - age / 2, age < 4 ? 1 : 0);
-    }
-    FRAME(80);
+    drawText(fb, MSG_GOBBLE, tx);
+    drawSprite(fb, TURKEY[(f / 3) % 2], x);
+    FRAME(STEP_MS);
   }
-  const int hoorayX = beside + (room - textWidth(MSG_HOORAY)) / 2;
-  for (uint8_t t = 0; t < 30; t++) {
+  crumble();
+}
+
+// A pumpkin pie: PIE TIME!, eaten a slice at a time (NOM!), then a BURP!
+static void scenePie() {
+  const int middle = (WIDTH - 16) / 2, left = 4;
+  wipe(bg);
+  drawPie(bg, middle);
+  wipe(fb);
+  dissolve(bg, true);
+  FRAME(1200);
+  for (int x = middle; x >= left; x--) {
     wipe(fb);
-    drawCake(fb, left, false);
-    drawWave(fb, MSG_HOORAY, hoorayX, t);
-    FRAME(60);
+    drawPie(fb, x);
+    FRAME(STEP_MS);
+  }
+  const int beside = left + 17, room = WIDTH - beside;  // the space to the right of the pie
+  const int pieX = beside + (room - textWidth(MSG_PIE)) / 2;
+  for (uint8_t t = 0; t < 40; t++) {
+    wipe(fb);
+    drawPie(fb, left);
+    drawWave(fb, MSG_PIE, pieX, t);
+    FRAME(70);
   }
   for (int slice = 1; slice <= 4; slice++) {  // eaten from the right, a slice at a time
     for (uint8_t t = 0; t < 9; t++) {
       wipe(fb);
-      if (slice < 4) drawCake(fb, left, false);
+      if (slice < 4) drawPie(fb, left);
       for (int x = left + 16 - slice * 4; x <= left + 16; x++) fb[x] = 0;
       drawText(fb, MSG_NOM, beside + 2 + (slice % 2) * 18, t < 3 ? 1 : 0);  // NOM! pops up
       FRAME(70);
@@ -397,136 +341,106 @@ static void sceneJoke() {
   parade(s, 1 + rnd(4));
 }
 
-// Balloons float up past the sign
-static void balloons() {
+// Maple leaves see-saw down past the sign
+static void leafFall() {
   const uint8_t n = 5;
   int x[n], start[n];
   for (uint8_t i = 0; i < n; i++) {
     x[i] = 2 + i * 12 + rnd(5);
-    start[i] = rnd(12);
+    start[i] = rnd(14);
   }
-  for (int f = 0; f < 75; f++) {  // each balloon rises a row every 3 frames
+  for (int f = 0; f < 80; f++) {  // each leaf drops a row every 3 frames
     wipe(fb);
-    for (uint8_t i = 0; i < n; i++)
-      drawSprite(fb, BALLOON[((f + i) / 4) % 2], x[i], 8 - (f - start[i]) / 3);
+    for (uint8_t i = 0; i < n; i++) {
+      const int age = f - start[i], phase = (age / 6) % 4;
+      drawSprite(fb, LEAF, x[i] + (phase == 1) - (phase == 3), -8 + age / 3);
+    }
     FRAME(50);
   }
 }
 
-// A present shakes, its lid pops off, and out comes SURPRISE!
-static void gift() {
-  int x = (WIDTH - 8) / 2;
-  for (uint8_t t = 0; t < 24; t++) {
-    int jiggle = t % 4 == 1 ? 1 : t % 4 == 3 ? -1 : 0;
+// RUN, TURKEY! ...and off it goes with a pilgrim hat after it
+static void turkeyRun() {
+  const int x0 = centered(MSG_RUN);
+  for (uint8_t t = 0; t < 30; t++) {
     wipe(fb);
-    drawSprite(fb, GIFT_BOX, x + jiggle);
-    drawSprite(fb, GIFT_LID, x + jiggle);
+    drawWave(fb, MSG_RUN, x0, t);
     FRAME(60);
   }
-  for (; x > 2; x--) {
+  for (int x = WIDTH, f = 0; x > -40; x -= 2, f++) {
     wipe(fb);
-    drawSprite(fb, GIFT_BOX, x);
-    drawSprite(fb, GIFT_LID, x);
+    drawSprite(fb, TURKEY[f % 2], x);
+    drawSprite(fb, PILGRIM_HAT, x + 22, -((f / 2) % 2));
     FRAME(STEP_MS);
   }
-  for (int lid = -1; lid >= -3; lid--) {
+}
+
+// A field goal: the ball sails over the crossbar between the uprights, IT'S GOOD!
+static void fieldGoal() {
+  const int steps = 30;
+  for (int t = 0; t <= steps; t++) {
+    const int p = t * 100 / steps;  // how far along the kick, in percent
     wipe(fb);
-    drawSprite(fb, GIFT_BOX, x);
-    drawSprite(fb, GIFT_LID, x, lid);
-    FRAME(80);
+    drawGoalposts();
+    drawSprite(fb, FOOTBALL, -8 + (WIDTH - 4) * t / steps, 3 - p * (125 - p) / 640);
+    FRAME(45);
   }
-  confettiStart();
-  for (int t = 0; t < 45; t++) {
+  for (uint8_t t = 0; t < 36; t++) {
     wipe(fb);
-    drawSprite(fb, GIFT_BOX, x);
-    drawWave(fb, MSG_SURPRISE, x + 10, t);
-    confettiStep(t, 10, true);
+    drawGoalposts();
+    drawWave(fb, MSG_GOOD, 2, t);
     FRAME(60);
   }
-  memcpy(bg, fb, WIDTH);
-  dissolve(bg, false);
+  crumble();
 }
 
-// A party blower with its paper tube unrolled `len` pixels
-static void drawHorn(int len) {
-  for (int x = 0; x < 4; x++) {  // mouthpiece
-    setPixel(fb, x, 3);
-    setPixel(fb, x, 4);
-  }
-  for (int x = 4; x < 4 + len; x++) {  // striped paper tube
-    setPixel(fb, x, 3);
-    if (x % 2) setPixel(fb, x, 4);
-  }
-  const int c = 4 + len;  // the curl at the end
-  setPixel(fb, c, 3); setPixel(fb, c, 4);
-  setPixel(fb, c + 1, 2); setPixel(fb, c + 2, 2);
-  setPixel(fb, c + 3, 3); setPixel(fb, c + 3, 4);
-  setPixel(fb, c + 1, 5); setPixel(fb, c + 2, 5);
-}
-
-// The party blower unrolls with a TOOT! and curls back up, three times
-static void horn() {
-  const int full = 27, tootX = 4 + full + 6;
-  for (uint8_t toot = 0; toot < 3; toot++) {
-    for (int len = 0; len <= full; len += 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    for (uint8_t t = 0; t < 12; t++) {
-      wipe(fb);
-      drawHorn(full);
-      drawText(fb, MSG_TOOT, tootX + (t < 4 ? (int)rnd(3) - 1 : 0), 1);
-      FRAME(60);
-    }
-    for (int len = full; len >= 0; len -= 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    FRAME(200);
-  }
-}
-
-// Sing-along: the song scrolls across a little stage with a bouncing note at each end
-static void song() {
-  const int w = textWidth(MSG_SONG), left = 10, right = WIDTH - 10;
-  for (int tx = right, f = 0; tx + w > left; f++) {
-    if (f % 2 == 0) tx--;
-    wipe(fb);
-    drawText(fb, MSG_SONG, tx);
-    for (int x = 0; x < left; x++) fb[x] = 0;
-    for (int x = right; x < WIDTH; x++) fb[x] = 0;
-    drawSprite(fb, NOTES, 0, (f / 10) % 2);
-    drawSprite(fb, NOTES, WIDTH - 8, (f / 10 + 1) % 2);
-    FRAME(STEP_MS / 2);
+// THANKFUL FOR... and a few things to be thankful for
+static void thankful() {
+  dropIn(MSG_THANKFUL);
+  FRAME(600);
+  dropOut(MSG_THANKFUL);
+  dropIn(MSG_FOR);
+  FRAME(400);
+  dropOut(MSG_FOR);
+  for (uint8_t i = 0; i < THANKFUL_COUNT; i++) {
+    const char *s = (const char *)pgm_read_ptr(&THANKFUL_FOR[i]);
+    dropIn(s);
+    FRAME(700);
+    dropOut(s);
   }
 }
 
 static void interlude() {
   static uint8_t last = 255;
   uint8_t pick;
-  do pick = rnd(5); while (pick == last);
+  do pick = rnd(4); while (pick == last);
   last = pick;
   switch (pick) {
-    case 0: balloons(); break;
-    case 1: fireworks(5); break;
-    case 2: gift(); break;
-    case 3: horn(); break;
-    default: song(); break;
+    case 0: leafFall(); break;
+    case 1: turkeyRun(); break;
+    case 2: fieldGoal(); break;
+    default: thankful(); break;
   }
 }
 
-// Fireworks, then the big one scrolls by, then more fireworks
+// The big one scrolls by with leaves falling, then the turkey has the last word
 static void sceneFinale() {
-  fireworks(6);
   const int w = textWidth(MSG_FINALE);
-  for (int x = WIDTH; x > -w; x--) {
+  leavesStart();
+  for (int x = WIDTH, f = 0; x > -w; x--, f++) {
     wipe(fb);
     drawText(fb, MSG_FINALE, x);
+    leavesStep(f, 6, true);
     FRAME(STEP_MS);
   }
-  fireworks(4);
+  const int gx = (WIDTH - 12 - textWidth(MSG_GOBBLE)) / 2;
+  for (uint8_t t = 0; t < 40; t++) {
+    wipe(fb);
+    drawWave(fb, MSG_GOBBLE, gx, t);
+    drawSprite(fb, TURKEY[0], WIDTH - 10, -((t / 3) % 2));
+    FRAME(60);
+  }
+  crumble();
 }
 
 // Football scores: a few of today's games scroll by, a football before each. The favourite
@@ -579,9 +493,9 @@ static void playThenScores(void (*scene)()) {
 }
 
 void runShow() {
-  playThenScores(sceneHappyBirthday);
-  playThenScores(sceneNames);
-  playThenScores(sceneCake);
+  playThenScores(sceneHappyThanksgiving);
+  playThenScores(sceneTurkey);
+  playThenScores(scenePie);
   playThenScores(sceneJoke);
   playThenScores(interlude);
   playThenScores(sceneJoke);

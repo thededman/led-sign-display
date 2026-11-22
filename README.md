@@ -1,21 +1,25 @@
 # LED Sign
 
 A 64×8 LED sign made of eight SainSmart MAX7219 8×8 modules in a row, run by an Arduino UNO.
-It plays a birthday show for Paul and Larry on a loop, about 80 seconds a pass:
+It plays a Thanksgiving show on a loop, about 85 seconds a pass:
 
-1. **Confetti**, then **HAPPY** and **BIRTHDAY** drop in, and BIRTHDAY bursts into confetti.
-2. The **names** do the wave in double-width letters: **PAUL!** with balloons rising up the
-   sides, then **LARRY!** in confetti.
-3. A **cake** with two flickering candles: **WISH!**, the candles blow out in puffs of smoke,
-   **HOORAY!**, then it's eaten a slice at a time (**NOM!**), and a big **BURP!**.
-4. Two **jokes** scroll by (eighteen in all), each followed by a little parade: a cupcake
-   with a flickering candle, a present, a party hat and a balloon.
-5. Between jokes: **balloons**, **fireworks**, a **present** that pops open (SURPRISE!), a
-   **party blower** (TOOT!), or a **sing-along** between two bouncing music notes.
-6. **Finale**: fireworks around HAPPY BIRTHDAY PAUL & LARRY!
+1. **Leaves** drift down, then **HAPPY**, **THANKS** and **GIVING!** drop in one after another
+   and crumble away.
+2. A **turkey** struts in, says **GOBBLE!** and struts off.
+3. A **pumpkin pie** with whipped cream: **PIE TIME!**, eaten a slice at a time (**NOM!**),
+   then a big **BURP!**.
+4. Two **jokes** scroll by (eighteen in all), each followed by a little Thanksgiving parade:
+   a turkey, a pilgrim hat, a maple leaf and a football.
+5. Between jokes: **falling leaves**, **RUN, TURKEY!** (a pilgrim hat chases the turkey), a
+   **field goal** (IT'S GOOD!), or **THANKFUL FOR...** family, friends, food, football, pie
+   and naps.
+6. **Finale**: HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS!, then the turkey has the last word.
 
-The Halloween show from Oct 31, 2026 (with Pac-Man) is release `v1.0.0`. To bring it back:
-`git checkout v1.0.0 -- src/messages.h src/show.cpp src/sprites.h`, then upload.
+On the Pi, every other screen is today's NFL scores (see below).
+
+Earlier shows are in releases: Halloween with Pac-Man is `v1.0.0`, and the birthday show is
+`v1.1.0`. To bring one back, e.g. `git checkout v1.1.0 -- src/messages.h src/show.cpp
+src/sprites.h`, then upload (keep the newer `src/show.h` and Pi files).
 
 ## Wiring
 
@@ -205,9 +209,8 @@ http://localhost:8032/viewer.html.
 
 ## Changing the words
 
-Everything the sign says is in `src/messages.h`. The birthday names are the first lines,
-so the next birthday is a quick edit (names also appear in the finale, the song and a few
-jokes). Use capital letters, digits and `! ? . , ' - & : / ( )`.
+Everything the sign says is in `src/messages.h`: the greetings, the THANKFUL FOR list and
+the jokes. Use capital letters, digits and `! ? . , ' - & : / ( )`.
 
 ## Previewing on a Mac
 

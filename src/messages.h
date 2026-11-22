@@ -3,42 +3,48 @@
 #pragma once
 #include "platform.h"
 
-// Whose birthday it is. Names show double width when they fit (about five letters and a "!").
-// They also appear in MSG_FINALE, MSG_SONG and a few of the jokes below.
-static const char NAME1[] PROGMEM = "PAUL!";
-static const char NAME2[] PROGMEM = "LARRY!";
-static const char MSG_FINALE[] PROGMEM = "HAPPY BIRTHDAY PAUL & LARRY!";
-static const char MSG_SONG[] PROGMEM = "HAPPY BIRTHDAY TO YOU... HAPPY BIRTHDAY DEAR PAUL & LARRY!";
-
-static const char MSG_AND[] PROGMEM = "&";
 static const char MSG_HAPPY[] PROGMEM = "HAPPY";
-static const char MSG_BIRTHDAY[] PROGMEM = "BIRTHDAY";
-static const char MSG_WISH[] PROGMEM = "WISH!";
-static const char MSG_HOORAY[] PROGMEM = "HOORAY!";
-static const char MSG_SURPRISE[] PROGMEM = "SURPRISE!";
+static const char MSG_THANKS[] PROGMEM = "THANKS";
+static const char MSG_GIVING[] PROGMEM = "GIVING!";
+static const char MSG_GOBBLE[] PROGMEM = "GOBBLE!";
+static const char MSG_PIE[] PROGMEM = "PIE TIME!";
 static const char MSG_NOM[] PROGMEM = "NOM!";
 static const char MSG_BURP[] PROGMEM = "BURP!";
-static const char MSG_TOOT[] PROGMEM = "TOOT!";
+static const char MSG_RUN[] PROGMEM = "RUN, TURKEY!";
+static const char MSG_GOOD[] PROGMEM = "IT'S GOOD!";
+static const char MSG_THANKFUL[] PROGMEM = "THANKFUL";
+static const char MSG_FOR[] PROGMEM = "FOR...";
+static const char MSG_FINALE[] PROGMEM = "HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS!";
+
+// What the sign is thankful for, one at a time after THANKFUL FOR...
+static const char T0[] PROGMEM = "FAMILY";
+static const char T1[] PROGMEM = "FRIENDS";
+static const char T2[] PROGMEM = "FOOD";
+static const char T3[] PROGMEM = "FOOTBALL";
+static const char T4[] PROGMEM = "PIE!";
+static const char T5[] PROGMEM = "NAPS!";
+static const char *const THANKFUL_FOR[] PROGMEM = { T0, T1, T2, T3, T4, T5 };
+#define THANKFUL_COUNT (sizeof(THANKFUL_FOR) / sizeof(THANKFUL_FOR[0]))
 
 // Two of these scroll by on each pass of the show, in order, with a little parade behind them.
-static const char J0[] PROGMEM = "TWO BIRTHDAYS, ONE CAKE? NO WAY - TWO CAKES!";
-static const char J1[] PROGMEM = "YOU'RE NOT OLD, YOU'RE VINTAGE";
-static const char J2[] PROGMEM = "LEGENDS ARE BORN ON NOVEMBER 1ST";
-static const char J3[] PROGMEM = "AGE IS JUST A NUMBER... A REALLY BIG ONE";
-static const char J4[] PROGMEM = "CAUTION: THIS MANY CANDLES MAY SET OFF THE SMOKE ALARM";
-static const char J5[] PROGMEM = "PAUL & LARRY: GREAT MINDS SHARE A BIRTHDAY";
-static const char J6[] PROGMEM = "CAKE CALORIES DON'T COUNT TODAY";
-static const char J7[] PROGMEM = "ANOTHER YEAR WISER (ALLEGEDLY)";
-static const char J8[] PROGMEM = "STILL YOUNG AT HEART (THE KNEES DISAGREE)";
-static const char J9[] PROGMEM = "HIP HIP HOORAY!";
-static const char J10[] PROGMEM = "SAME BIRTHDAY, DIFFERENT NUMBER OF CANDLES";
-static const char J11[] PROGMEM = "THE CANDLES COST MORE THAN THE CAKE";
-static const char J12[] PROGMEM = "CONGRATS ON BEING OLDER THAN YOU'VE EVER BEEN";
-static const char J13[] PROGMEM = "OLD? NO WAY - CLASSIC EDITION!";
-static const char J14[] PROGMEM = "AGE IMPROVES WINE, CHEESE, PAUL & LARRY";
-static const char J15[] PROGMEM = "BIRTHDAY RULE: EAT CAKE FIRST, ASK QUESTIONS LATER";
-static const char J16[] PROGMEM = "WARNING: BIRTHDAY BOYS MAY NAP AFTER CAKE";
-static const char J17[] PROGMEM = "CAREFUL WITH THE CANDLES - WE DON'T HAVE A FIRE PERMIT";
+static const char J0[] PROGMEM = "WHY DID THE TURKEY CROSS THE ROAD? TO PROVE HE WASN'T CHICKEN!";
+static const char J1[] PROGMEM = "WHAT DO YOU CALL A RUNNING TURKEY? FAST FOOD!";
+static const char J2[] PROGMEM = "GOBBLE TILL YOU WOBBLE";
+static const char J3[] PROGMEM = "WHAT'S A TURKEY'S FAVORITE DESSERT? PEACH GOBBLER!";
+static const char J4[] PROGMEM = "THANKFUL FOR ELASTIC WAISTBANDS";
+static const char J5[] PROGMEM = "WHAT SOUND DOES A LIMPING TURKEY MAKE? WOBBLE WOBBLE!";
+static const char J6[] PROGMEM = "CALORIES DON'T COUNT ON THANKSGIVING";
+static const char J7[] PROGMEM = "WHY CAN'T YOU TAKE A TURKEY TO CHURCH? FOWL LANGUAGE!";
+static const char J8[] PROGMEM = "PASS THE GRAVY... AND THE REMOTE";
+static const char J9[] PROGMEM = "WHAT DID THE TURKEY SAY TO THE COMPUTER? GOOGLE GOOGLE GOOGLE!";
+static const char J10[] PROGMEM = "THE TURKEY WASN'T HUNGRY... HE WAS ALREADY STUFFED";
+static const char J11[] PROGMEM = "THANKSGIVING SPORTS: FOOTBALL, EATING AND NAPPING";
+static const char J12[] PROGMEM = "WHY DID THE CRANBERRIES TURN RED? THEY SAW THE TURKEY DRESSING!";
+static const char J13[] PROGMEM = "LEFTOVERS: THE REAL REASON FOR THE SEASON";
+static const char J14[] PROGMEM = "WHAT MUSIC DID THE PILGRIMS LIKE? PLYMOUTH ROCK!";
+static const char J15[] PROGMEM = "I CAME FOR THE TURKEY. I STAYED FOR THE PIE.";
+static const char J16[] PROGMEM = "KEEP CALM AND GOBBLE ON";
+static const char J17[] PROGMEM = "THANKFUL FOR EVERYONE IN THIS ROOM";
 
 static const char *const JOKES[] PROGMEM = {
   J0, J1, J2, J3, J4, J5, J6, J7, J8, J9, J10, J11, J12, J13, J14, J15, J16, J17 };
