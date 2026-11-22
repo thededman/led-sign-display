@@ -94,11 +94,11 @@ static std::string readFile(const char *path) {
 int main() {
   // which show a name means
   assert(std::strcmp(resolveShow("thanksgiving")->name, "thanksgiving") == 0);
-  assert(std::strcmp(resolveShow("christmas")->name, "thanksgiving") == 0);  // not built yet
+  assert(std::strcmp(resolveShow("valentines")->name, "thanksgiving") == 0);  // not built yet
   assert(std::strcmp(resolveShow("")->name, "thanksgiving") == 0);
 
   // a show the sign doesn't have plays the fallback in full, instead of ending every pass
-  todayShow = "christmas";
+  todayShow = "valentines";
   frames = 0;
   runShow();
   assert(frames > 1000);
@@ -122,6 +122,18 @@ int main() {
 
   // the birthday show plays a full pass with names, and without any
   todayShow = "birthday";
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+
+  // the Christmas show: a full pass, with a clock (sleeps to go) and without
+  assert(std::strcmp(resolveShow("christmas")->name, "christmas") == 0);
+  todayShow = "christmas";
+  setClock(2026, 12, 20, 18, 0, 0);
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+  haveClock = false;
   frames = 0;
   runShow();
   assert(frames > 1000);

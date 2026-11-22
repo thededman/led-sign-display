@@ -29,6 +29,7 @@
 // UNO only one fits, so pick it here.
 #define SHOW_THANKSGIVING 1
 #define SHOW_BIRTHDAY 2
+#define SHOW_CHRISTMAS 3
 #ifdef ARDUINO
   #define UNO_SHOW SHOW_THANKSGIVING
   #define WANT_SHOW(s) (UNO_SHOW == SHOW_##s)

@@ -6,7 +6,7 @@ import dataclasses
 import datetime
 
 # The shows the sign has, in the order the phone page lists them: (id, name)
-SHOWS = [("thanksgiving", "Thanksgiving"), ("birthday", "Birthday")]
+SHOWS = [("thanksgiving", "Thanksgiving"), ("christmas", "Christmas"), ("birthday", "Birthday")]
 
 D = datetime.date
 
