@@ -7,14 +7,51 @@
 #include <sstream>
 #include <string>
 
+#include "effects.h"
 #include "show.h"
 #include "today.h"
 
 static int frames, switchAt = -1;
 static const char *todayShow = "thanksgiving", *switchTo = "";
 
-bool frame(uint16_t) {
+// A scripted clock: off until setClock(), then moved on by every frame
+static bool haveClock;
+static uint16_t clockYear;
+static uint8_t clockMonth, clockDay;
+static uint64_t clockMs;  // since midnight; can run past it until localTime() is asked
+
+static void setClock(uint16_t y, uint8_t mo, uint8_t d, uint8_t h, uint8_t mi, uint8_t sec) {
+  haveClock = true;
+  clockYear = y;
+  clockMonth = mo;
+  clockDay = d;
+  clockMs = ((h * 60 + mi) * 60 + sec) * 1000ull;
+}
+
+static uint8_t monthDays(uint16_t y, uint8_t m) {
+  static const uint8_t DAYS[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  const bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+  return m == 2 && leap ? 29 : DAYS[m - 1];
+}
+
+bool localTime(LocalTime *t) {
+  if (!haveClock) return false;
+  for (; clockMs >= 86400000ull; clockMs -= 86400000ull) {
+    if (++clockDay > monthDays(clockYear, clockMonth)) {
+      clockDay = 1;
+      if (++clockMonth > 12) {
+        clockMonth = 1;
+        clockYear++;
+      }
+    }
+  }
+  *t = {clockYear, clockMonth, clockDay, (uint32_t)clockMs};
+  return true;
+}
+
+bool frame(uint16_t ms) {
   frames++;
+  clockMs += ms;
   if (frames == switchAt) {  // the today file changes: the platform ends the scene
     todayShow = switchTo;
     return false;
@@ -76,6 +113,24 @@ int main() {
   frames = 0;
   runShow();
   assert(frames > 1000);
+
+  // the date helpers
+  setClock(2026, 12, 20, 9, 0, 0);
+  assert(daysUntil(12, 25) == 5);
+  setClock(2026, 12, 25, 9, 0, 0);
+  assert(daysUntil(12, 25) == 0);
+  setClock(2026, 12, 26, 9, 0, 0);
+  assert(daysUntil(12, 25) == 364);
+  setClock(2026, 12, 31, 23, 59, 50);
+  assert(msToNewYear() == 10000 && newYearNumber() == 2027);
+  setClock(2026, 12, 30, 12, 0, 0);
+  assert(msToNewYear() == -1);
+  setClock(2027, 1, 1, 0, 0, 1);
+  assert(msToNewYear() == -1 && newYearNumber() == 2027);
+  setClock(2028, 2, 28, 23, 0, 0);  // a leap year: the 29th comes next
+  assert(daysUntil(3, 1) == 2);
+  haveClock = false;
+  assert(daysUntil(12, 25) == -1 && msToNewYear() == -1 && newYearNumber() == 0);
 
   // the today file, as the Python writer writes it
   Today t;

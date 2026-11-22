@@ -214,6 +214,39 @@ void sceneScores() {
   }
 }
 
+// ---------------------------------------------------------------- the date
+
+// Days since 1970-01-01 (Howard Hinnant's days_from_civil)
+static int32_t dayNumber(int32_t y, uint8_t m, uint8_t d) {
+  y -= m <= 2;
+  const int32_t era = (y >= 0 ? y : y - 399) / 400;
+  const uint32_t yoe = (uint32_t)(y - era * 400);
+  const uint32_t doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+  const uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return era * 146097 + (int32_t)doe - 719468;
+}
+
+int16_t daysUntil(uint8_t month, uint8_t day) {
+  LocalTime t;
+  if (!localTime(&t)) return -1;
+  const int32_t today = dayNumber(t.year, t.month, t.day);
+  int32_t target = dayNumber(t.year, month, day);
+  if (target < today) target = dayNumber(t.year + 1, month, day);
+  return target - today;
+}
+
+int32_t msToNewYear() {
+  LocalTime t;
+  if (!localTime(&t) || t.month != 12 || t.day != 31) return -1;
+  return 86400000L - (int32_t)t.ms;
+}
+
+uint16_t newYearNumber() {
+  LocalTime t;
+  if (!localTime(&t)) return 0;
+  return t.month == 12 ? t.year + 1 : t.year;
+}
+
 // ---------------------------------------------------------------- running scenes
 
 void play(void (*scene)()) {

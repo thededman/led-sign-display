@@ -35,6 +35,11 @@ void drawWave(uint8_t *buf, const char *s, int x, int t, uint8_t wide = 1);
 void crumble();
 void parade(const char *s, uint8_t marchers);  // with the show's marchers behind the words
 
+// The date, from the platform's clock
+int16_t daysUntil(uint8_t month, uint8_t day);  // 0 on the day; -1 without a clock
+int32_t msToNewYear();     // milliseconds to midnight on New Year's Eve; -1 on any other day
+uint16_t newYearNumber();  // the year starting next Jan 1 in December, else this year; 0 without a clock
+
 // Scenes every show uses
 void sceneJoke(const char *const *jokes, uint8_t count, uint8_t *next);  // jokes: a PROGMEM list
 void sceneScores();

@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -144,6 +145,20 @@ uint8_t scoreCount() { return scoreLines; }
 const char *scoreLine(uint8_t i) { return i < scoreLines ? scores[i] : nullptr; }
 
 const char *today(const char *key) { return todayValue(todayNow, key); }
+
+bool localTime(LocalTime *t) {
+  const auto now = std::chrono::system_clock::now();
+  const std::time_t secs = std::chrono::system_clock::to_time_t(now);
+  std::tm tm;
+  localtime_r(&secs, &tm);
+  if (tm.tm_year + 1900 < 2025) return false;  // a clock that was never set
+  const long ms = std::chrono::duration_cast<milliseconds>(now.time_since_epoch()).count() % 1000;
+  t->year = tm.tm_year + 1900;
+  t->month = tm.tm_mon + 1;
+  t->day = tm.tm_mday;
+  t->ms = ((tm.tm_hour * 60 + tm.tm_min) * 60 + tm.tm_sec) * 1000 + ms;
+  return true;
+}
 
 int main(int argc, char **argv) {
   if (const char *path = std::getenv("LEDSIGN_SETTINGS")) settingsPath = path;

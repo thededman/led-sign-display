@@ -47,6 +47,8 @@ const char *scoreLine(uint8_t) { return nullptr; }
 
 const char *today(const char *) { return ""; }  // no today file: the UNO plays its one show
 
+bool localTime(LocalTime *) { return false; }  // no clock on the UNO
+
 #ifdef FINDER
 
 // Orientation finder: tries the 8 ways a module's LEDs can be wired, 4 seconds each. Every module
