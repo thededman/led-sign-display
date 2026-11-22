@@ -18,9 +18,9 @@ The current show is **Thanksgiving**, about 85 seconds a pass:
 |---|---|
 | ![HAPPY THANKS GIVING! with falling leaves](docs/images/thanksgiving-giving.png) | ![A turkey says GOBBLE!](docs/images/thanksgiving-turkey.png) |
 | Leaves fall, then HAPPY / THANKS / GIVING! drop in | A turkey struts in and gobbles |
-| ![A pumpkin pie and PIE TIME!](docs/images/thanksgiving-pie.png) | ![A joke followed by a little parade](docs/images/thanksgiving-parade.png) |
+| ![A pumpkin pie and PIE TIME!](docs/images/thanksgiving-pie.png) | ![The end of a joke, CHICKEN!, with a turkey parading behind](docs/images/thanksgiving-parade.png) |
 | A pumpkin pie gets eaten: NOM! NOM! BURP! | Jokes scroll by with a parade behind them |
-| ![A football flying at the goalposts](docs/images/thanksgiving-field-goal.png) | ![The finale message scrolling](docs/images/thanksgiving-finale.png) |
+| ![IT'S GOOD! beside the goalposts](docs/images/thanksgiving-field-goal.png) | ![The finale message scrolling](docs/images/thanksgiving-finale.png) |
 | A field goal… IT'S GOOD! | HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS! |
 
 Earlier shows are kept in releases, ready to bring back (see [Make it yours](#make-it-yours)):
