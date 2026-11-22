@@ -4,8 +4,8 @@
 
 A 64×8 LED message sign made from eight MAX7219 8×8 LED modules, run by an **Arduino UNO**
 or a **Raspberry Pi Zero W**. It plays animated holiday shows with pixel-art characters and
-jokes. On the Pi it also shows **live NFL scores** and has a **phone page** for typing your
-own messages.
+jokes. On the Pi it **picks the show by the date** (and plays a birthday show on the birthdays
+you add), shows **live NFL scores**, and has a **phone page** for typing your own messages.
 
 Everything here is open source (MIT license): the code, the 3D-printable case and holder,
 and the tools that made the pictures on this page.
@@ -23,13 +23,15 @@ The current show is **Thanksgiving**, about 85 seconds a pass:
 | ![IT'S GOOD! beside the goalposts](docs/images/thanksgiving-field-goal.png) | ![The finale message scrolling](docs/images/thanksgiving-finale.png) |
 | A field goal… IT'S GOOD! | HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS! |
 
-Earlier shows, which come back as the sign learns the seasons
-([#6](https://github.com/thededman/led-sign-display/issues/6)):
+The **Birthday** show plays all day on each birthday you add on the phone page, with their
+names. More holidays are on the way
+([#6](https://github.com/thededman/led-sign-display/issues/6)); Halloween comes back, rebuilt,
+next October:
 
 | | |
 |---|---|
 | ![ALEX! doing the wave beside a balloon](docs/images/birthday-names.png) | ![A birthday cake and WISH!](docs/images/birthday-cake.png) |
-| **Birthday**: names do the wave | Candles, a wish, then the cake gets eaten |
+| **Birthday**: the names do the wave | Candles, a wish, then the cake gets eaten |
 | ![WELCOME!](docs/images/halloween-welcome.png) | ![Three jack-o'-lanterns](docs/images/halloween-pumpkins.png) |
 | **Halloween**: WELCOME! | Jack-o'-lanterns, bats, ghosts and a BOO! finale |
 
@@ -39,9 +41,10 @@ bouncing football:
 ![A scores screen: a football, then DET 24 @ DAL 21](docs/images/nfl-scores.png)
 
 And the **phone page** (open `http://ledsign.local` on the same Wi-Fi) lets anyone in the
-house type a message, set the brightness, skip or pause, and pick a favorite team:
+house see which show is on and pick another, type a message, add birthdays, set the
+brightness, pick a favorite team, and skip or pause:
 
-<img src="docs/images/phone-page.png" alt="The phone page: a message box, brightness, NFL scores with a favorite team, and today's games" width="360">
+<img src="docs/images/phone-page.png" alt="The phone page: which show is on, a message box, birthdays, brightness, NFL scores with a favorite team, and today's games" width="360">
 
 ## What you need
 
@@ -106,8 +109,9 @@ The UNO version runs the show on its own: no Wi-Fi, no scores, no phone page.
 1. Install [PlatformIO](https://platformio.org) (the VS Code extension, or
    `pip install platformio`) and plug the UNO into your computer.
 2. **Check the wiring** (see [First run](#first-run-find-your-displays-orientation)).
-3. Put your display's layout number in `src/config.h` as `ORIENTATION`, then upload the
-   show:
+3. Put your display's layout number in `src/config.h` as `ORIENTATION`. The UNO has room for
+   one show, `UNO_SHOW` in the same file (Thanksgiving; the birthday show needs the phone
+   page's names, so it's Pi only). Then upload it:
 
    ```bash
    pio run -t upload
@@ -152,6 +156,14 @@ after power-on.
    scrolls by straight away, then takes every other joke's turn until you clear it. There's
    no password, so anyone on your Wi-Fi can use it.
 
+**Shows by the date.** Once the Pi has the time from the internet, `pi/scores.py` picks the
+day's show (the calendar is in `pi/season.py`): Thanksgiving from Nov 1 to Thanksgiving Day,
+and the Birthday show all day on every birthday you add on the phone page. Holidays without
+a show yet play Thanksgiving for now. The phone page shows "Automatic: …" and can pick any
+show; a pick stays on until you set it back to Automatic. Offline, the sign keeps the show it
+had. Birthdays are kept on the Pi, and `pi/deploy.sh` keeps a copy in `~/.led-sign/` on your
+computer and puts them back if the SD card is ever re-flashed.
+
 **NFL scores.** `pi/scores.py` checks ESPN's public scoreboard (unofficial, no key needed)
 every 30 seconds while games are on, and every other screen of the show is a scores ticker:
 `BUF 17 @ KC 21 Q3 4:32`, `NYG 10 @ DAL 24 FINAL`, `MIA @ NE 1:00 PM`. The phone page turns
@@ -188,20 +200,42 @@ right, cable at the right-hand end.
 
 ## Make it yours
 
-- **Words**: everything the sign says is in `src/messages.h`: greetings, lists and the
-  jokes. The font (`src/font.h`) has capital letters, digits and the usual punctuation.
-- **Pictures**: the turkey, pie and friends are 8×8 pixel art in `src/sprites.h`, one byte
-  per row, so you can draw your own with `0b00111100`-style rows.
-- **Animations**: the scenes are in `src/show.cpp`; `runShow()` at the bottom sets their
-  order.
+Each show is in `src/shows/`: `thanksgiving.cpp` and `birthday.cpp`, each with its own
+`_words.h` and `_sprites.h`.
+
+- **Words**: everything a show says is in its `_words.h`: greetings, lists and the jokes. The
+  font (`src/font.h`) has capital letters, digits and the usual punctuation.
+- **Pictures**: the turkey, pie, cake and friends are 8×8 pixel art in the `_sprites.h`
+  files, one byte per row, so you can draw your own with `0b00111100`-style rows.
+- **Animations**: the scenes are in the show's `.cpp`; its `run…()` function at the bottom
+  sets their order. Effects every show shares (dissolves, drop-in words, the parade, the
+  scores screen) are in `src/effects.cpp`.
+- **A new show**: add its files to `src/shows/`, a line to the table in `src/show.cpp`, and
+  its name to `SHOWS` in `pi/season.py` (and its dates to the calendar there).
 - **Try it on your computer first**: `tools/preview/build.sh` runs the show and writes
   `tools/preview/build/preview.html`, which plays every frame on a picture of the sign.
-  With `PREVIEW_SCORES=file` it adds scores screens from a file of game lines.
+  With `PREVIEW_SCORES=file` it adds scores screens from a file of game lines, and with
+  `PREVIEW_TODAY=tools/preview/samples/birthday.today` it plays that day's show.
   `tools/preview/screenshots.py` turns moments of a preview into the pictures on this page
   (needs `pip install pillow`).
 - **The Pi program without a Pi**: `make -C pi term` builds `pi/ledsign-term`, which draws the
-  sign in a terminal, and `python3 pi/web/server.py --port 8033 --settings /tmp/settings`
-  serves the phone page (run `ledsign-term` with `LEDSIGN_SETTINGS=/tmp/settings`).
+  sign in a terminal. With a folder for its files (`mkdir -p /tmp/sign`), these run the
+  phone page (at http://localhost:8033), the scores and calendar service, and the sign, each
+  in its own terminal:
+
+  ```bash
+  python3 pi/web/server.py --port 8033 --settings /tmp/sign/settings --scores /tmp/sign/scores --today /tmp/sign/today --birthdays /tmp/sign/birthdays
+  ```
+
+  ```bash
+  python3 pi/scores.py --out /tmp/sign/scores --settings /tmp/sign/settings --today /tmp/sign/today --birthdays /tmp/sign/birthdays
+  ```
+
+  ```bash
+  LEDSIGN_SETTINGS=/tmp/sign/settings LEDSIGN_SCORES=/tmp/sign/scores LEDSIGN_TODAY=/tmp/sign/today pi/ledsign-term
+  ```
+- **Tests**: `tests/run.sh` runs them all: the calendar, the phone page server, the show
+  table and the today file.
 
 ## 3D-printed case and holder
 
@@ -249,14 +283,17 @@ the bat's head and feet.
 
 | Path | What it is |
 |---|---|
-| `src/config.h` | Pins, orientation, brightness |
-| `src/messages.h` | The words |
-| `src/show.cpp` | The scenes and effects |
-| `src/sprites.h` | 8×8 pixel art |
+| `src/config.h` | Pins, orientation, brightness, the UNO's show |
+| `src/shows/` | The shows: scenes, words and 8×8 pixel art |
+| `src/effects.cpp` | Drawing and effects every show shares |
+| `src/show.cpp` | Which shows there are, and which one plays |
+| `src/today.cpp` | Reading the Pi's today file |
+| `src/sprites.h` | The football on the scores screen |
 | `src/font.h` | 5×7 letters |
 | `src/matrix.cpp`, `src/matrix_map.h` | Driving the MAX7219 chips (map shared with the Pi) |
 | `src/main.cpp` | UNO setup, the wiring test and orientation finder |
-| `pi/` | The Pi program, SPI driver, phone page, scores, services and deploy script |
+| `pi/` | The Pi program, SPI driver, phone page, scores and calendar, services and deploy script |
+| `tests/` | `tests/run.sh` runs every test |
 | `holder/` | 3D-printable case and bat holder, their scripts and the 3D viewer |
 | `tools/preview/` | Run the show on a computer; make screenshots |
 | `CHANGELOG.md` | What changed in each release |

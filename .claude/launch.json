@@ -35,7 +35,11 @@
         "--settings",
         "tools/preview/build/settings",
         "--scores",
-        "tools/preview/build/scores"
+        "tools/preview/build/scores",
+        "--today",
+        "tools/preview/build/today",
+        "--birthdays",
+        "tools/preview/build/birthdays"
       ],
       "port": 8033
     }

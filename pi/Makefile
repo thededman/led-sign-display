@@ -4,8 +4,8 @@
 
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra
 CXXFLAGS += -I../src
-SHOW = ../src/show.cpp
-DEPS = main.cpp $(SHOW) $(wildcard ../src/*.h)
+SHOW = ../src/effects.cpp ../src/show.cpp ../src/today.cpp $(wildcard ../src/shows/*.cpp)
+DEPS = main.cpp $(SHOW) $(wildcard ../src/*.h ../src/shows/*.h)
 SIGN_USER ?= $(SUDO_USER)
 
 ledsign: $(DEPS) matrix_spidev.cpp
@@ -22,6 +22,7 @@ install: ledsign
 	install -m 644 web/index.html /opt/led-sign/web/
 	install -m 755 web/server.py /opt/led-sign/web/
 	install -m 755 scores.py /opt/led-sign/
+	install -m 644 season.py /opt/led-sign/
 	install -d -o $(SIGN_USER) /var/lib/led-sign
 	for unit in led-sign led-sign-web led-sign-scores; do \
 	  sed "s/@USER@/$(SIGN_USER)/" systemd/$$unit.service > /etc/systemd/system/$$unit.service; \

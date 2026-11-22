@@ -4,7 +4,8 @@
 //   ledsign --finder   the orientation finder (see the README): an F and 1-8 dots per module
 // The phone page writes a small key=value file (brightness, paused, skip, message) at
 // /var/lib/led-sign/settings, or wherever LEDSIGN_SETTINGS points; scores.py keeps today's
-// football games, one per line, at /var/lib/led-sign/scores (or LEDSIGN_SCORES).
+// football games, one per line, at /var/lib/led-sign/scores (or LEDSIGN_SCORES), and which
+// show plays today at /var/lib/led-sign/today (or LEDSIGN_TODAY).
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -18,12 +19,14 @@
 #include "config.h"
 #include "matrix.h"
 #include "show.h"
+#include "today.h"
 
 using Clock = std::chrono::steady_clock;
 using std::chrono::milliseconds;
 
 static const char *settingsPath = "/var/lib/led-sign/settings";
 static const char *scoresPath = "/var/lib/led-sign/scores";
+static const char *todayPath = "/var/lib/led-sign/today";
 static std::string lastSettings;  // file contents as last read, to spot changes
 static Clock::time_point checkedAt;
 
@@ -77,11 +80,31 @@ static void readSettings() {
   }
 }
 
+// Today's show and its words. Fields are rewritten in place, so text being drawn stays valid.
+static Today todayNow;
+static std::string lastToday;
+
+static void readToday() {
+  std::ifstream in(todayPath);
+  if (!in) return;  // no file yet: keep playing what's playing
+  std::stringstream all;
+  all << in.rdbuf();
+  const std::string text = all.str();
+  if (text == lastToday) return;
+  lastToday = text;
+  Today next;
+  parseToday(text.c_str(), &next);
+  if (!next.show[0]) return;  // empty or garbled: keep playing what's playing
+  if (resolveShow(next.show) != resolveShow(todayNow.show)) skipping = true;  // end the scene now
+  std::memcpy(&todayNow, &next, sizeof next);
+}
+
 static void checkSettings() {
   if (Clock::now() - checkedAt < milliseconds(300)) return;
   checkedAt = Clock::now();
   readSettings();
   readScores();
+  readToday();
 }
 
 bool frame(uint16_t ms) {
@@ -120,12 +143,17 @@ uint8_t scoreCount() { return scoreLines; }
 
 const char *scoreLine(uint8_t i) { return i < scoreLines ? scores[i] : nullptr; }
 
+const char *today(const char *key) { return todayValue(todayNow, key); }
+
 int main(int argc, char **argv) {
   if (const char *path = std::getenv("LEDSIGN_SETTINGS")) settingsPath = path;
   if (const char *path = std::getenv("LEDSIGN_SCORES")) scoresPath = path;
+  if (const char *path = std::getenv("LEDSIGN_TODAY")) todayPath = path;
   matrixBegin(ORIENTATION, brightness);
   readSettings();
   readScores();
+  readToday();
+  skipping = false;     // the first show starts from the top
   messageNew = false;  // a message left from before shows in turn, not straight away
 
   if (argc > 1 && std::strcmp(argv[1], "--finder") == 0) {

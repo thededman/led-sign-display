@@ -1,7 +1,7 @@
-// The words on the sign. Edit freely, then rebuild and upload.
+// The Thanksgiving show's words. Edit freely, then rebuild and upload.
 // Use capital letters, digits and  ! ? . , ' - & : / ( )  (lowercase shows as capitals).
 #pragma once
-#include "platform.h"
+#include "../platform.h"
 
 static const char MSG_HAPPY[] PROGMEM = "HAPPY";
 static const char MSG_THANKS[] PROGMEM = "THANKS";
