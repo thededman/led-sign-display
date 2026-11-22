@@ -6,6 +6,10 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Issue and pull request templates on GitHub, so every request is tracked from the ask to
+  the release.
+
 ## [1.1.0] - 2026-11-22
 
 ### Changed
