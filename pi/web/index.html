@@ -48,6 +48,20 @@
   .games { list-style: none; margin: 12px 0 0; padding: 0; font-variant-numeric: tabular-nums; }
   .games li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 15px; }
   .games li.fav { font-weight: 700; }
+  .status { font-size: 15px; margin: 0 0 4px; }
+  .status strong { font-weight: 600; }
+  .bdays { list-style: none; margin: 0 0 12px; padding: 0; }
+  .bdays li { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+              padding: 6px 0; border-top: 1px solid var(--line); font-size: 15px; }
+  .bdays li:first-child { border-top: 0; }
+  .bdays li.none { color: var(--muted); }
+  .bdays button { flex: 0 0 auto; min-height: 36px; padding: 0 12px; font-size: 14px; font-weight: 500; }
+  .add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .add input, .add select { width: 100%; min-height: 44px; margin: 0; padding: 0 10px; font: inherit;
+                            color: var(--text); background: var(--bg); border: 1px solid var(--line);
+                            border-radius: 10px; }
+  .add #bname { grid-column: 1 / -1; text-transform: uppercase; }
+  .add button { min-height: 44px; }
   #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 8px 16px;
            border-radius: 999px; background: var(--text); color: var(--bg); font-size: 14px;
            opacity: 0; transition: opacity .2s; pointer-events: none; }
@@ -62,6 +76,13 @@
   </header>
 
   <section>
+    <h2>Show</h2>
+    <p class="status" id="showNow"></p>
+    <select id="show" aria-label="Pick a show"></select>
+    <p class="hint">Automatic picks by the date: holidays, and birthdays on their day. A show you pick stays on until you set it back to Automatic.</p>
+  </section>
+
+  <section>
     <h2>Say something</h2>
     <textarea id="message" maxlength="160" autocapitalize="characters" autocomplete="off"
               placeholder="WELCOME!"></textarea>
@@ -71,6 +92,19 @@
       <button id="clear">Clear</button>
     </div>
     <p class="now" id="current"></p>
+  </section>
+
+  <section>
+    <h2>Birthdays</h2>
+    <ul class="bdays" id="bdays"></ul>
+    <div class="add">
+      <input id="bname" maxlength="12" autocapitalize="characters" autocomplete="off" placeholder="Name" aria-label="Name">
+      <select id="bmonth" aria-label="Month"></select>
+      <select id="bday" aria-label="Day"></select>
+      <input id="byear" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Year born (optional)" aria-label="Year born (optional)">
+      <button id="badd">Add birthday</button>
+    </div>
+    <p class="hint">Birthdays play all day on the date, with the names on the sign. They're kept on the sign, not online.</p>
   </section>
 
   <section>
@@ -124,7 +158,7 @@
   </section>
 
   <section>
-    <h2>Show</h2>
+    <h2>Controls</h2>
     <div class="row">
       <button id="skip">Next scene</button>
       <button id="pause">Pause</button>
@@ -136,6 +170,29 @@
 <script>
 const $ = id => document.getElementById(id);
 let settings = null;
+let birthdays = [];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+                'September', 'October', 'November', 'December'];
+
+function showName(id) {
+  const show = ((settings && settings.shows) || []).find(s => s.id === id);
+  return show ? show.name : id;
+}
+
+function renderShow(s) {
+  const list = s.shows || [];
+  if ($('show').options.length !== list.length + 1) {
+    $('show').replaceChildren(new Option('Automatic', 'auto'), ...list.map(x => new Option(x.name, x.id)));
+  }
+  if (document.activeElement !== $('show')) $('show').value = s.show || 'auto';
+  const now = s.show && s.show !== 'auto' ? ['Picked: ', showName(s.show)]
+            : (s.today && s.today.show) ? ['Automatic: ', showName(s.today.show)] : ['Automatic', ''];
+  const label = document.createElement('span');
+  label.textContent = now[0];
+  const name = document.createElement('strong');
+  name.textContent = now[1];
+  $('showNow').replaceChildren(label, name);
+}
 
 function render(s) {
   settings = s;
@@ -146,6 +203,7 @@ function render(s) {
   $('scores').checked = !!s.scores;
   if (document.activeElement !== $('team')) $('team').value = s.team || '';
   $('level').textContent = $('brightness').value;
+  renderShow(s);
   $('current').innerHTML = '';
   if (s.message) {
     const label = document.createElement('span');
@@ -189,11 +247,49 @@ function renderGames(games) {
   }
 }
 
+function renderBirthdays(list) {
+  birthdays = list;
+  $('bdays').replaceChildren(...list.map((b, i) => {
+    const li = document.createElement('li');
+    const text = document.createElement('span');
+    text.textContent = `${b.name} \u2014 ${MONTHS[b.month - 1]} ${b.day}` + (b.year ? ` (${b.year})` : '');
+    const remove = document.createElement('button');
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', `Remove ${b.name}`);
+    remove.onclick = () => saveBirthdays(birthdays.filter((_, k) => k !== i), 'Birthday removed');
+    li.append(text, remove);
+    return li;
+  }));
+  if (!list.length) {
+    const li = document.createElement('li');
+    li.className = 'none';
+    li.textContent = 'No birthdays yet';
+    $('bdays').append(li);
+  }
+}
+
+async function saveBirthdays(list, note) {
+  try {
+    const r = await fetch('/api/birthdays', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ birthdays: list }) });
+    if (!r.ok) throw new Error(r.status);
+    const kept = await r.json();
+    renderBirthdays(kept);
+    const refused = kept.length < list.length;  // a date that doesn't exist, or one already there
+    toast(refused ? 'Check the name and date' : note);
+    return !refused;
+  } catch (e) {
+    toast("Couldn't reach the sign");
+    return false;
+  }
+}
+
 async function refresh() {
   try {
     const r = await fetch('/api/settings', { cache: 'no-store' });
     render(await r.json());
     renderGames(await (await fetch('/api/scores', { cache: 'no-store' })).json());
+    renderBirthdays(await (await fetch('/api/birthdays', { cache: 'no-store' })).json());
   } catch (e) {
     $('state').textContent = 'Offline';
     $('state').classList.remove('on');
@@ -212,6 +308,21 @@ $('pause').onclick = () => send({ paused: !(settings && settings.paused) });
 $('scores').onchange = () => send({ scores: $('scores').checked }, $('scores').checked ? 'Scores on' : 'Scores off')
   .then(() => setTimeout(refresh, 2500));
 $('team').onchange = () => send({ team: $('team').value }, 'Favorite saved').then(() => setTimeout(refresh, 2500));
+
+$('show').onchange = () => send({ show: $('show').value }, $('show').value === 'auto' ? 'Back to automatic' : 'Show picked')
+  .then(() => setTimeout(refresh, 2000));
+
+$('bmonth').replaceChildren(...MONTHS.map((m, i) => new Option(m, i + 1)));
+$('bday').replaceChildren(...Array.from({ length: 31 }, (_, i) => new Option(i + 1, i + 1)));
+$('bmonth').value = new Date().getMonth() + 1;
+$('bday').value = new Date().getDate();
+$('badd').onclick = async () => {
+  const name = $('bname').value.trim();
+  if (!name) { toast('Type a name first'); $('bname').focus(); return; }
+  const year = $('byear').value.trim();
+  const added = { name, month: Number($('bmonth').value), day: Number($('bday').value), year: year ? Number(year) : null };
+  if (await saveBirthdays([...birthdays, added], 'Birthday added')) { $('bname').value = ''; $('byear').value = ''; }
+};
 
 let slide;
 $('brightness').oninput = () => {
