@@ -6,6 +6,12 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-22
+
+### Added
+- Issue and pull request templates on GitHub, so every request is tracked from the ask to
+  the release.
+
 ## [1.1.0] - 2026-11-22
 
 ### Changed
@@ -45,6 +51,7 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/thededman/led-sign-display/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thededman/led-sign-display/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/thededman/led-sign-display/releases/tag/v1.0.0
