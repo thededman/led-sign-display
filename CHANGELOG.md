@@ -6,6 +6,13 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-22
+
+### Fixed
+- A phone page left open while the sign is updated now reloads itself within a few seconds,
+  so it never shows an old page whose buttons don't work any more. (A page already open from
+  before this release needs one reload by hand.)
+
 ## [1.4.0] - 2026-11-22
 
 ### Added
@@ -105,7 +112,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/thededman/led-sign-display/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/thededman/led-sign-display/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/thededman/led-sign-display/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/thededman/led-sign-display/compare/v1.2.0...v1.3.0

@@ -7,6 +7,7 @@ Standard library only.
 """
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import pathlib
@@ -19,6 +20,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 import season  # noqa: E402
 
 PAGE = (pathlib.Path(__file__).parent / "index.html").read_bytes()
+# Which page this is: an open phone page that sees a different one reloads itself, so nobody is
+# left on an old page after the sign is updated
+PAGE_VERSION = hashlib.sha256(PAGE).hexdigest()[:12]
+PAGE = PAGE.replace(b"__PAGE_VERSION__", PAGE_VERSION.encode())
 DEFAULTS = {"brightness": 2, "paused": 0, "skip": 0, "message": "", "scores": 1, "team": "", "show": "auto"}
 NUMBERS = ("brightness", "paused", "skip", "scores")
 LETTERS = set(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ")  # the sign's font
@@ -124,7 +129,8 @@ class Handler(BaseHTTPRequestHandler):
     def state(self, settings):
         """The settings, plus what's playing and the shows there are to pick from."""
         shows = [{"id": i, "name": n} for i, n in season.SHOWS]
-        return json.dumps(dict(settings, today=read_today(self.today_path), shows=shows)).encode()
+        state = dict(settings, today=read_today(self.today_path), shows=shows, page=PAGE_VERSION)
+        return json.dumps(state).encode()
 
     def birthdays(self):
         try:
