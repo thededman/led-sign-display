@@ -6,6 +6,24 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-22
+
+### Added
+- A build guide in the README for anyone making their own sign: the parts, wiring diagrams
+  for the Arduino UNO and the Raspberry Pi Zero W, setting up each one, finding your
+  display's orientation, making the show your own, and the 3D-printed case and holder, with
+  pictures of every show, the scores screen and the phone page.
+- The Pi can run the orientation finder (`ledsign --finder`), so a sign built on a Pi alone
+  can find its display's layout without an Arduino.
+- An MIT license, so others can use, change and share the project.
+- Tools for making those pictures: `tools/preview/screenshots.py`, sample scores in the
+  preview (`PREVIEW_SCORES`), and the 3D viewer opens a chosen model and view from its
+  address (`viewer.html?model=case&view=back`).
+
+### Changed
+- The phone page's message box suggests WELCOME! instead of HAPPY BIRTHDAY!.
+- `pi/deploy.sh` sends to your own user name at `ledsign.local` unless you name another.
+
 ## [1.2.0] - 2026-11-22
 
 ### Changed
@@ -60,7 +78,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/thededman/led-sign-display/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/thededman/led-sign-display/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/thededman/led-sign-display/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thededman/led-sign-display/compare/v1.0.0...v1.1.0

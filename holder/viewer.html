@@ -81,6 +81,8 @@ const uno = box(-X0 - 72, -34, 3, -X0 - 19, 34, 28, 0x1f8a5a, 0.85);   // UNO (r
 const bank = box(X0 + 19, -50, 3, X0 + 84, 50, 19, 0x9a9a9a, 0.85);     // power bank (left wing)
 scene.add(parts);
 const model = document.getElementById('model');
+const query = new URLSearchParams(location.search);  // e.g. viewer.html?model=case&view=angle
+if (MODELS[query.get('model')]) model.value = query.get('model');
 model.onchange = () => load(model.value);
 load(model.value);
 document.getElementById('parts').onchange = e => { parts.visible = e.target.checked; };
@@ -100,7 +102,7 @@ function show(name) {
   controls.update();
 }
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => show(b.dataset.view));
-show('front');
+show(views[query.get('view')] ? query.get('view') : 'front');
 
 function resize() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
