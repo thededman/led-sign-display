@@ -6,6 +6,13 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-22
+
+### Changed
+- Now that the project is public, family names are out of the README picture, the changelog
+  and the time log (the birthday picture uses made-up names), and the README no longer
+  points to restoring the old Halloween release.
+
 ## [1.3.0] - 2026-11-22
 
 ### Added
@@ -42,11 +49,10 @@ All notable changes to the sign are listed here. The format follows
 ## [1.1.0] - 2026-11-22
 
 ### Changed
-- The sign now plays a birthday show for Paul and Larry: names doing the wave, balloons,
+- The sign now plays a birthday show for two family birthdays: names doing the wave, balloons,
   confetti, a cake whose candles blow out and then get eaten (NOM! BURP!), fireworks, a
   present, a party blower, a sing-along, and eighteen birthday jokes, each followed by a
-  parade of cupcake, present, party hat and balloon. The Halloween show (with Pac-Man) is
-  still in release 1.0.0.
+  parade of cupcake, present, party hat and balloon.
 
 ### Added
 - On the Pi, every other screen shows today's NFL scores (live, final and upcoming), three
@@ -78,7 +84,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/thededman/led-sign-display/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/thededman/led-sign-display/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/thededman/led-sign-display/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/thededman/led-sign-display/compare/v1.1.0...v1.1.1

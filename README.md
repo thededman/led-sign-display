@@ -23,14 +23,15 @@ The current show is **Thanksgiving**, about 85 seconds a pass:
 | ![IT'S GOOD! beside the goalposts](docs/images/thanksgiving-field-goal.png) | ![The finale message scrolling](docs/images/thanksgiving-finale.png) |
 | A field goal… IT'S GOOD! | HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS! |
 
-Earlier shows are kept in releases, ready to bring back (see [Make it yours](#make-it-yours)):
+Earlier shows, which come back as the sign learns the seasons
+([#6](https://github.com/thededman/led-sign-display/issues/6)):
 
 | | |
 |---|---|
-| ![PAUL! doing the wave with a balloon](docs/images/birthday-names.png) | ![A birthday cake and WISH!](docs/images/birthday-cake.png) |
-| **Birthday** (v1.1.0): names do the wave | Candles, a wish, then the cake gets eaten |
+| ![ALEX! doing the wave beside a balloon](docs/images/birthday-names.png) | ![A birthday cake and WISH!](docs/images/birthday-cake.png) |
+| **Birthday**: names do the wave | Candles, a wish, then the cake gets eaten |
 | ![WELCOME!](docs/images/halloween-welcome.png) | ![Three jack-o'-lanterns](docs/images/halloween-pumpkins.png) |
-| **Halloween** (v1.0.0): WELCOME! | Jack-o'-lanterns, bats, ghosts and a BOO! finale |
+| **Halloween**: WELCOME! | Jack-o'-lanterns, bats, ghosts and a BOO! finale |
 
 On the Pi, **every other screen is today's NFL scores**, three games at a time with a
 bouncing football:
@@ -193,9 +194,6 @@ right, cable at the right-hand end.
   per row, so you can draw your own with `0b00111100`-style rows.
 - **Animations**: the scenes are in `src/show.cpp`; `runShow()` at the bottom sets their
   order.
-- **Earlier shows**: Halloween is release `v1.0.0` and the birthday show is `v1.1.0`. To
-  bring one back, `git checkout v1.1.0 -- src/messages.h src/show.cpp src/sprites.h` and
-  rebuild (keep the newer `src/show.h` and `pi/` files).
 - **Try it on your computer first**: `tools/preview/build.sh` runs the show and writes
   `tools/preview/build/preview.html`, which plays every frame on a picture of the sign.
   With `PREVIEW_SCORES=file` it adds scores screens from a file of game lines.
