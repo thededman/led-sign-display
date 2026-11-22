@@ -6,6 +6,13 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The sign now plays a Thanksgiving show instead of the birthday one: falling leaves, a
+  strutting turkey (GOBBLE!), a pumpkin pie that gets eaten (NOM! BURP!), a field goal,
+  RUN, TURKEY!, a THANKFUL FOR... list, and eighteen Thanksgiving jokes, each followed by a
+  parade of turkey, pilgrim hat, leaf and football. NFL scores still show every other screen
+  on the Pi. The birthday show is still in release 1.1.0.
+
 ## [1.1.0] - 2026-11-22
 
 ### Changed
