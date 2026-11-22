@@ -3,7 +3,10 @@
 //   preview.html              plays the show
 //   preview.html?t=12.5       paused at 12.5 s
 //   preview.html?sheet=0-30   a still every 0.5 s from 0 to 30 s (&every=250 for every 250 ms)
+// With PREVIEW_SCORES pointing at a file of game lines (like the Pi's scores file), the
+// scores screens show up too.
 #include <cstdio>
+#include <fstream>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -39,8 +42,10 @@ const char *phoneMessage(bool *isNew) {
   return nullptr;
 }
 
-uint8_t scoreCount() { return 0; }
-const char *scoreLine(uint8_t) { return nullptr; }
+static std::vector<std::string> scores;  // sample games, if PREVIEW_SCORES names a file
+
+uint8_t scoreCount() { return scores.size(); }
+const char *scoreLine(uint8_t i) { return i < scores.size() ? scores[i].c_str() : nullptr; }
 
 static const char PAGE_HEAD[] = R"(<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -109,6 +114,11 @@ if (q.has('sheet')) {
 int main(int argc, char **argv) {
   const char *out = argc > 1 ? argv[1] : "preview.html";
   std::srand(1031);
+  if (const char *path = std::getenv("PREVIEW_SCORES")) {
+    std::ifstream in(path);
+    for (std::string line; std::getline(in, line);)
+      if (!line.empty()) scores.push_back(line);
+  }
   for (int pass = 0; pass < 9; pass++) runShow();  // nine passes show all eighteen jokes
 
   FILE *f = std::fopen(out, "w");

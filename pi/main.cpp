@@ -1,6 +1,7 @@
 // The sign on a Raspberry Pi: runs the show and takes its settings from the phone page.
 //   ledsign            run the show
 //   ledsign --test     a square on every module, to check the wiring
+//   ledsign --finder   the orientation finder (see the README): an F and 1-8 dots per module
 // The phone page writes a small key=value file (brightness, paused, skip, message) at
 // /var/lib/led-sign/settings, or wherever LEDSIGN_SETTINGS points; scores.py keeps today's
 // football games, one per line, at /var/lib/led-sign/scores (or LEDSIGN_SCORES).
@@ -127,6 +128,23 @@ int main(int argc, char **argv) {
   readScores();
   messageNew = false;  // a message left from before shows in turn, not straight away
 
+  if (argc > 1 && std::strcmp(argv[1], "--finder") == 0) {
+    static const uint8_t F[5] = {0x7F, 0x09, 0x09, 0x09, 0x01};
+    for (;;) {
+      for (uint8_t k = 0; k < 8; k++) {
+        std::printf("%d dots = ORIENTATION %d (or %d if the cable enters at the right-hand end)\n",
+                    k + 1, k * 2, k * 2 + 1);
+        std::fflush(stdout);
+        matrixOrientation(k * 2);
+        for (uint8_t m = 0; m < MODULES; m++) {
+          for (uint8_t c = 0; c < 8; c++) fb[m * 8 + c] = c < 5 ? F[c] : 0;
+          fb[m * 8 + 6] = 0xFF >> (7 - k);  // k + 1 dots
+        }
+        matrixShow(fb);
+        std::this_thread::sleep_for(milliseconds(4000));
+      }
+    }
+  }
   if (argc > 1 && std::strcmp(argv[1], "--test") == 0) {
     for (int c = 0; c < WIDTH; c++) fb[c] = (c % 8 == 0 || c % 8 == 7) ? 0xFF : 0x81;
     for (;;) {
