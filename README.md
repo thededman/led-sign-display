@@ -219,8 +219,21 @@ Each show is in `src/shows/`: `thanksgiving.cpp` and `birthday.cpp`, each with i
   `tools/preview/screenshots.py` turns moments of a preview into the pictures on this page
   (needs `pip install pillow`).
 - **The Pi program without a Pi**: `make -C pi term` builds `pi/ledsign-term`, which draws the
-  sign in a terminal, and `python3 pi/web/server.py --port 8033 --settings /tmp/settings`
-  serves the phone page (run `ledsign-term` with `LEDSIGN_SETTINGS=/tmp/settings`).
+  sign in a terminal. With a folder for its files (`mkdir -p /tmp/sign`), these run the
+  phone page (at http://localhost:8033), the scores and calendar service, and the sign, each
+  in its own terminal:
+
+  ```bash
+  python3 pi/web/server.py --port 8033 --settings /tmp/sign/settings --scores /tmp/sign/scores --today /tmp/sign/today --birthdays /tmp/sign/birthdays
+  ```
+
+  ```bash
+  python3 pi/scores.py --out /tmp/sign/scores --settings /tmp/sign/settings --today /tmp/sign/today --birthdays /tmp/sign/birthdays
+  ```
+
+  ```bash
+  LEDSIGN_SETTINGS=/tmp/sign/settings LEDSIGN_SCORES=/tmp/sign/scores LEDSIGN_TODAY=/tmp/sign/today pi/ledsign-term
+  ```
 - **Tests**: `tests/run.sh` runs them all: the calendar, the phone page server, the show
   table and the today file.
 

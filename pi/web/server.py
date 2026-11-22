@@ -38,6 +38,7 @@ def load(path):
                 settings[key] = value
     except (OSError, ValueError):
         pass
+    settings["show"] = clean_pick(settings["show"])  # a show the sign no longer has: Automatic
     return settings
 
 
@@ -165,7 +166,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(400, b'{"error": "bad request"}')
 
         if self.path == "/api/birthdays":
-            kept = clean_birthdays(change.get("birthdays"))
+            if not isinstance(change.get("birthdays"), list):  # never empty the file by mistake
+                return self.reply(400, b'{"error": "bad request"}')
+            kept = clean_birthdays(change["birthdays"])
             write_text(self.birthdays_path, season.format_birthdays(kept))
             return self.reply(200, json.dumps(birthdays_json(kept)).encode())
 

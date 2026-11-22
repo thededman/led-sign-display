@@ -11,16 +11,23 @@ if [ "$1" = "--setup" ]; then SETUP=1; shift; fi
 HOST=${1:-$USER@ledsign.local}
 cd "$(dirname "$0")/.."
 BACKUP="$HOME/.led-sign"
-saved=$(ssh "$HOST" 'cat /var/lib/led-sign/birthdays 2>/dev/null' || true)
-if [ -n "$saved" ]; then
-  mkdir -p "$BACKUP" && chmod 700 "$BACKUP"
-  printf '%s\n' "$saved" > "$BACKUP/birthdays"
-fi
+# The birthdays file: copy it here whenever the Pi has one (even an empty one, so a birthday
+# removed on the phone page stays removed); put the copy back only if the Pi has none at all
+set +e
+ssh "$HOST" 'test -e /var/lib/led-sign/birthdays'
+found=$?
+set -e
+case $found in
+  0) mkdir -p "$BACKUP" && chmod 700 "$BACKUP"
+     ssh "$HOST" 'cat /var/lib/led-sign/birthdays' > "$BACKUP/birthdays" ;;
+  1) ;;
+  *) echo "Can't reach $HOST" >&2; exit 1 ;;
+esac
 COPYFILE_DISABLE=1 tar czf - --no-xattrs --exclude pi/ledsign-term --exclude __pycache__ src pi |
   ssh "$HOST" 'rm -rf ~/led-sign && mkdir -p ~/led-sign && tar xzf - -C ~/led-sign'
 [ -n "$SETUP" ] && ssh -t "$HOST" 'sh ~/led-sign/pi/setup.sh'
 ssh -t "$HOST" 'cd ~/led-sign/pi && make && sudo make install'
-if [ -z "$saved" ] && [ -s "$BACKUP/birthdays" ]; then
+if [ "$found" = 1 ] && [ -s "$BACKUP/birthdays" ]; then
   ssh "$HOST" 'cat > /var/lib/led-sign/birthdays' < "$BACKUP/birthdays"
-  echo "Put back $(wc -l < "$BACKUP/birthdays" | tr -d ' ') birthdays from $BACKUP/birthdays"
+  echo "Put back the birthdays saved in $BACKUP/birthdays"
 fi

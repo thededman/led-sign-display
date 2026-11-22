@@ -41,6 +41,13 @@ class UpdateToday(unittest.TestCase):
         self.assertFalse(scores.update_today(self.today, self.settings, self.bdays, T(2031, 1, 1), synced=False))
         self.assertEqual(self.read(self.today), "show=thanksgiving\nwhy=auto\nnames=\nturning=\n")
 
+    def test_unsynced_clock_still_honours_a_pick(self):
+        """A pick doesn't depend on the date, so it reaches the sign before the clock is set."""
+        pathlib.Path(self.today).write_text("show=thanksgiving\nwhy=auto\nnames=\nturning=\n")
+        pathlib.Path(self.settings).write_text("show=birthday\n")
+        self.assertTrue(scores.update_today(self.today, self.settings, self.bdays, T(2031, 1, 1), synced=False))
+        self.assertIn("show=birthday\nwhy=picked\n", self.read(self.today))
+
     def test_missing_files(self):  # no settings and no birthdays yet
         self.assertTrue(scores.update_today(self.today, self.missing, self.missing, T(2026, 11, 22, 9), synced=True))
         self.assertIn("show=thanksgiving\n", self.read(self.today))

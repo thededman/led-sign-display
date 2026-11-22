@@ -60,10 +60,11 @@ def clock_synced():
 
 def update_today(today_path, settings_path, birthdays_path, now, synced):
     """Writes today's show to the today file; returns True if the file changed. With the clock
-    not yet synced (an offline reboot) the file is left alone, so the sign keeps its show."""
-    if not synced:
-        return False
+    not yet synced (an offline reboot) only a show picked on the phone is written, since that
+    doesn't depend on the date; otherwise the file is left alone and the sign keeps its show."""
     pick = read_settings(settings_path).get("show", "auto")
+    if not synced and pick not in [i for i, _ in season.SHOWS]:
+        return False
     birthdays = season.parse_birthdays(read_text(birthdays_path))
     text = season.today_text(season.decide(now, birthdays, pick))
     if read_text(today_path) == text:
@@ -150,6 +151,7 @@ def main():
     last_ok = time.monotonic()
     next_fetch = 0.0
     decided_minute = None
+    clock_ok = False  # once synced, the Pi keeps good time even if Wi-Fi drops for a while
     watched = None  # the settings and birthdays files as last seen
     while True:
         now = datetime.datetime.now()
@@ -157,7 +159,8 @@ def main():
         minute = now.replace(second=0, microsecond=0)
         if files != watched or minute != decided_minute:  # once a minute, and when they change
             try:
-                update_today(args.today, args.settings, args.birthdays, now, clock_synced())
+                clock_ok = clock_ok or clock_synced()
+                update_today(args.today, args.settings, args.birthdays, now, clock_ok)
             except Exception as error:  # never let the calendar stop the scores
                 print(f"today: {error}", file=sys.stderr, flush=True)
             decided_minute = minute
