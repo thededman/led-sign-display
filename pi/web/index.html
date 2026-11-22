@@ -51,6 +51,8 @@
   .games li.fav { font-weight: 700; }
   .status { font-size: 15px; margin: 0 0 4px; }
   .status strong { font-weight: 600; }
+  #backAuto { width: 100%; margin: 4px 0 10px; }
+  #backAuto[hidden] { display: none; }
   .bdays { list-style: none; margin: 0 0 12px; padding: 0; }
   .bdays li { display: flex; align-items: center; justify-content: space-between; gap: 10px;
               padding: 6px 0; border-top: 1px solid var(--line); font-size: 15px; }
@@ -79,6 +81,7 @@
   <section>
     <h2>Show</h2>
     <p class="status" id="showNow"></p>
+    <button class="primary" id="backAuto" hidden>Back to Automatic</button>
     <select id="show" aria-label="Pick a show"></select>
     <p class="hint">Automatic picks by the date: holidays, and birthdays on their day. A show you pick stays on until you set it back to Automatic.</p>
   </section>
@@ -196,6 +199,7 @@ function renderShow(s) {
   const name = document.createElement('strong');
   name.textContent = now[1];
   $('showNow').replaceChildren(label, name);
+  $('backAuto').hidden = !s.show || s.show === 'auto';  // a picked show stays until this is tapped
 }
 
 // After the sign is updated its page changes: reload once to get the new one
@@ -325,6 +329,8 @@ $('team').onchange = () => send({ team: $('team').value }, 'Favorite saved').the
 
 $('show').onchange = () => send({ show: $('show').value }, $('show').value === 'auto' ? 'Back to automatic' : 'Show picked')
   .then(() => setTimeout(refresh, 2000));
+
+$('backAuto').onclick = () => send({ show: 'auto' }, 'Back to automatic').then(() => setTimeout(refresh, 2000));
 
 $('bmonth').replaceChildren(...MONTHS.map((m, i) => new Option(m, i + 1)));
 $('bday').replaceChildren(...Array.from({ length: 31 }, (_, i) => new Option(i + 1, i + 1)));

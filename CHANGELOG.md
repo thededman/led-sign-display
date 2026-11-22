@@ -6,6 +6,12 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-22
+
+### Changed
+- When a show has been picked on the phone page, a "Back to Automatic" button appears right
+  under "Picked: …", so handing the sign back to the calendar is one tap.
+
 ## [1.4.1] - 2026-11-22
 
 ### Fixed
@@ -112,7 +118,8 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/thededman/led-sign-display/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/thededman/led-sign-display/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/thededman/led-sign-display/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/thededman/led-sign-display/compare/v1.3.0...v1.3.1
