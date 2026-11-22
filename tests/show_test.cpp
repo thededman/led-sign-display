@@ -1,6 +1,7 @@
 // Tests for the show table and the today file reader, with a scripted platform.
 //   tests/run.sh
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -55,8 +56,17 @@ static uint64_t shotAt[3];
 static uint8_t shots[3][WIDTH];
 static bool shotTaken[3];
 
+static uint64_t switchAtMs = UINT64_MAX;  // or switch shows when the clock gets this far
+static uint8_t testScores;                 // how many score lines the scores screen has
+
 bool frame(uint16_t ms) {
   frames++;
+  if (switchAtMs >= elapsed && switchAtMs < elapsed + ms) {  // the today file changes mid-frame
+    todayShow = switchTo;
+    elapsed += ms;
+    clockMs += ms;
+    return false;
+  }
   for (int i = 0; i < 3; i++)
     if (!shotTaken[i] && shotAt[i] >= elapsed && shotAt[i] < elapsed + ms) {
       std::memcpy(shots[i], fb, WIDTH);
@@ -80,8 +90,13 @@ const char *phoneMessage(bool *isNew) {
   *isNew = false;
   return nullptr;
 }
-uint8_t scoreCount() { return 0; }
-const char *scoreLine(uint8_t) { return nullptr; }
+static const char *const SCORE_LINES[16] = {
+  "*DET 24 @ DAL 21 Q4 2:10", "NYJ 17 @ LAC 3 FINAL", "MIN @ SF 8:20 PM", "BUF 17 @ KC 21 Q3 4:32",
+  "NYG 10 @ DAL 24 FINAL", "MIA @ NE 1:00 PM", "BOS 101 @ NY 99 Q4 0:40", "CHI 3 @ TOR 2 P3 1:15",
+  "LAL @ GS 10:30 PM", "SEA 20 @ ARI 17 OT 2:00", "DEN 9 @ LV 6 FINAL", "PIT @ CLE 4:25 PM",
+  "TB 14 @ NO 14 HALFTIME", "HOU 7 @ IND 10 END Q1", "CAR @ ATL 1:00 PM", "WSH 21 @ PHI 28 FINAL"};
+uint8_t scoreCount() { return testScores; }
+const char *scoreLine(uint8_t i) { return i < testScores ? SCORE_LINES[i] : nullptr; }
 const char *today(const char *key) { return std::strcmp(key, "show") == 0 ? todayShow : ""; }
 
 static std::string readFile(const char *path) {
@@ -168,24 +183,40 @@ int main() {
   haveClock = false;
   assert(daysUntil(12, 25) == -1 && msToNewYear() == -1 && newYearNumber() == 0);
 
-  // New Year's Eve: the countdown runs on time, inside whatever show is playing
-  setClock(2026, 12, 31, 23, 58, 0);
-  elapsed = 0;
-  const uint64_t moments[3] = {110500, 119500, 120500};  // 23:59:50.5, 23:59:59.5, 00:00:00.5
-  for (int i = 0; i < 3; i++) {
-    shotAt[i] = moments[i];
-    shotTaken[i] = false;
+  // New Year's Eve: the countdown runs on time, inside whatever show is playing, even when a
+  // long scene or a busy scores screen is running as its window opens
+  for (uint8_t run = 0; run < 2; run++) {
+    testScores = run ? 16 : 0;
+    const uint8_t startSec = run ? 13 : 0;  // 23:55:00, then 23:55:13 with scores
+    setClock(2026, 12, 31, 23, 55, startSec);
+    elapsed = 0;
+    const uint64_t toMidnight = 300000 - startSec * 1000;
+    const uint64_t moments[3] = {toMidnight - 9500, toMidnight - 500, toMidnight + 500};
+    for (int i = 0; i < 3; i++) {
+      shotAt[i] = moments[i];  // 23:59:50.5, 23:59:59.5, 00:00:00.5
+      shotTaken[i] = false;
+    }
+    todayShow = "thanksgiving";
+    for (int pass = 0; pass < 6 && !shotTaken[2]; pass++) runShow();
+    assert(shotTaken[0] && shotTaken[1] && shotTaken[2]);
+    uint8_t ten[WIDTH] = {0}, one[WIDTH] = {0};
+    drawText(ten, "10", centered("10", 2), 0, 2);
+    drawText(one, "1", centered("1", 2), 0, 2);
+    assert(std::memcmp(shots[0], ten, WIDTH) == 0);
+    assert(std::memcmp(shots[1], one, WIDTH) == 0);
+    assert(std::memcmp(shots[2], one, WIDTH) != 0);  // midnight: not still on 1
   }
-  todayShow = "thanksgiving";
-  runShow();
-  runShow();
-  assert(shotTaken[0] && shotTaken[1] && shotTaken[2]);
-  uint8_t ten[WIDTH] = {0}, one[WIDTH] = {0};
-  drawText(ten, "10", centered("10", 2), 0, 2);
-  drawText(one, "1", centered("1", 2), 0, 2);
-  assert(std::memcmp(shots[0], ten, WIDTH) == 0);
-  assert(std::memcmp(shots[1], one, WIDTH) == 0);
-  assert(std::memcmp(shots[2], one, WIDTH) != 0);  // midnight: not still on 1
+  testScores = 0;
+
+  // a show change at midnight (a Jan 1 birthday) doesn't cut the celebration short
+  setClock(2026, 12, 31, 23, 59, 55);
+  elapsed = 0;
+  switchTo = "birthday";
+  switchAtMs = 5500;  // 00:00:00.5
+  todayShow = "newyear";
+  newYearCountdown();
+  assert(elapsed >= 5000 + 12000);  // HAPPY NEW YEAR! ran its course after the switch
+  switchAtMs = UINT64_MAX;
   haveClock = false;
 
   // the today file, as the Python writer writes it

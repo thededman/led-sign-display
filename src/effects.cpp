@@ -6,6 +6,7 @@
 uint8_t fb[WIDTH];
 uint8_t bg[WIDTH];
 bool sceneStopped;
+bool sceneHeld;
 Marcher showMarcher;
 
 // ---------------------------------------------------------------- drawing
@@ -376,6 +377,7 @@ static void writeTime(char *buf, int32_t secs, bool bare) {
 // New Year's Eve: the time left ticks down, the last ten seconds count down in big digits in
 // step with the clock, and at midnight HAPPY NEW YEAR! with fireworks
 void newYearCountdown() {
+  sceneHeld = true;  // nothing cuts in: not a skip, not a show change at midnight
   char buf[8];
   for (int f = 0; msToNewYear() > 10000; f++) {  // 2:30 ... 0:11, with twinkles either side
     writeTime(buf, (msToNewYear() + 999) / 1000, false);
@@ -417,6 +419,7 @@ void newYearCountdown() {
   }
   fireworks(6);
   fireworks(6);
+  sceneHeld = false;
 }
 #endif
 
@@ -429,6 +432,7 @@ void play(void (*scene)()) {
     return;
   }
 #endif
+  sceneHeld = false;          // only the countdown holds the sign
   if (showChanged()) return;  // the day's show changed: the rest of this pass is skipped
   bool isNew;
   const char *phone = phoneMessage(&isNew);
