@@ -6,6 +6,8 @@ All notable changes to the sign are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-22
+
 ### Changed
 - The sign now plays a birthday show for Paul and Larry: names doing the wave, balloons,
   confetti, a cake whose candles blow out and then get eaten (NOM! BURP!), fireworks, a
@@ -26,6 +28,9 @@ All notable changes to the sign are listed here. The format follows
   plug, a slot for its wires and Command strip pads at the ends. Both halves print together
   in about an hour.
 
+### Known issues
+- The reprinted right half of the plain case, with the cable bay, hasn't been test-fitted yet.
+
 ## [1.0.0] - 2026-10-31
 
 ### Added
@@ -40,5 +45,6 @@ All notable changes to the sign are listed here. The format follows
 ### Known issues
 - The ESP32 DevKit V1 build can't drive this display without a 3.3 V → 5 V level shifter.
 
-[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/thededman/led-sign-display/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/thededman/led-sign-display/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/thededman/led-sign-display/releases/tag/v1.0.0
