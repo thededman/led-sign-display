@@ -5,7 +5,8 @@
 //   preview.html?sheet=0-30   a still every 0.5 s from 0 to 30 s (&every=250 for every 250 ms)
 // With PREVIEW_SCORES pointing at a file of game lines (like the Pi's scores file), the
 // scores screens show up too. With PREVIEW_TODAY pointing at a today file (like the Pi's,
-// e.g. tools/preview/samples/birthday.today), it plays that day's show.
+// e.g. tools/preview/samples/birthday.today), it plays that day's show. With PREVIEW_CLOCK
+// ("2026-12-31 23:58:30") the show has a clock that starts there and moves on with the frames.
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -23,6 +24,33 @@ struct Frame {
 static std::vector<Frame> frames;
 static unsigned peakLit;
 
+// The simulated clock (PREVIEW_CLOCK), moved on by every frame
+static bool haveClock;
+static LocalTime clockNow;
+static uint64_t clockMs;
+
+static uint8_t monthDays(uint16_t y, uint8_t m) {
+  static const uint8_t DAYS[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  const bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+  return m == 2 && leap ? 29 : DAYS[m - 1];
+}
+
+bool localTime(LocalTime *t) {
+  if (!haveClock) return false;
+  for (; clockMs >= 86400000ull; clockMs -= 86400000ull) {
+    if (++clockNow.day > monthDays(clockNow.year, clockNow.month)) {
+      clockNow.day = 1;
+      if (++clockNow.month > 12) {
+        clockNow.month = 1;
+        clockNow.year++;
+      }
+    }
+  }
+  clockNow.ms = (uint32_t)clockMs;
+  *t = clockNow;
+  return true;
+}
+
 bool frame(uint16_t ms) {
   static const char HEX[] = "0123456789abcdef";
   std::string hex;
@@ -33,6 +61,7 @@ bool frame(uint16_t ms) {
     lit += __builtin_popcount(fb[x]);
   }
   if (lit > peakLit) peakLit = lit;
+  clockMs += ms;
   if (!frames.empty() && frames.back().hex == hex) frames.back().ms += ms;
   else frames.push_back({ms, hex});
   return true;
@@ -121,6 +150,16 @@ if (q.has('sheet')) {
 int main(int argc, char **argv) {
   const char *out = argc > 1 ? argv[1] : "preview.html";
   std::srand(1031);
+  if (const char *when = std::getenv("PREVIEW_CLOCK")) {
+    unsigned y, mo, d, h, mi, sec;
+    if (std::sscanf(when, "%u-%u-%u %u:%u:%u", &y, &mo, &d, &h, &mi, &sec) == 6) {
+      haveClock = true;
+      clockNow = {(uint16_t)y, (uint8_t)mo, (uint8_t)d, 0};
+      clockMs = ((h * 60 + mi) * 60 + sec) * 1000ull;
+    } else {
+      std::fprintf(stderr, "PREVIEW_CLOCK should look like 2026-12-31 23:58:30\n");
+    }
+  }
   if (const char *path = std::getenv("PREVIEW_TODAY")) {
     std::ifstream in(path);
     if (!in) std::fprintf(stderr, "can't read PREVIEW_TODAY file %s\n", path);

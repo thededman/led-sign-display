@@ -18,6 +18,14 @@ const char *scoreLine(uint8_t i);
 // null; the UNO has none). The text may change between frames, but the pointer stays valid.
 const char *today(const char *key);
 
+// The local date and time, for countdowns: false when there's no clock (the UNO)
+struct LocalTime {
+  uint16_t year;
+  uint8_t month, day;
+  uint32_t ms;  // since local midnight
+};
+bool localTime(LocalTime *t);
+
 void runShow();  // one full pass of the show the day calls for
 
 // The shows the sign holds (src/show.cpp)

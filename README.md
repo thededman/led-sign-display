@@ -12,7 +12,8 @@ and the tools that made the pictures on this page.
 
 ## What it looks like
 
-The current show is **Thanksgiving**, about 85 seconds a pass:
+On the Pi the sign picks its show by the date. **Thanksgiving** plays from Nov 1, about 85
+seconds a pass:
 
 | | |
 |---|---|
@@ -22,6 +23,28 @@ The current show is **Thanksgiving**, about 85 seconds a pass:
 | A pumpkin pie gets eaten: NOM! NOM! BURP! | Jokes scroll by with a parade behind them |
 | ![IT'S GOOD! beside the goalposts](docs/images/thanksgiving-field-goal.png) | ![The finale message scrolling](docs/images/thanksgiving-finale.png) |
 | A field goal… IT'S GOOD! | HAPPY THANKSGIVING FROM OUR HOUSE TO YOURS! |
+
+**Christmas** takes over the day after Thanksgiving, until Dec 25:
+
+![Snow falls, MERRY CHRISTMAS! drops in, and Santa's sleigh flies by](docs/images/christmas.gif)
+
+| | |
+|---|---|
+| ![Santa's sleigh and two reindeer flying across](docs/images/christmas-sleigh.png) | ![A Christmas tree with presents either side](docs/images/christmas-tree.png) |
+| Santa's sleigh and reindeer: HO HO HO! | A tree whose lights twinkle, and presents |
+| ![A snowman with stick arms, and BRRR!](docs/images/christmas-snowman.png) | ![5 SLEEPS TILL CHRISTMAS!](docs/images/christmas-sleeps.png) |
+| A snowman is built ball by ball and shivers | How many sleeps are left |
+
+**New Year** plays from Dec 26 to Jan 1. On New Year's Eve, whatever is playing, the sign
+counts down the last couple of minutes to midnight, the final ten seconds in big digits in
+step with the Pi's clock:
+
+| | |
+|---|---|
+| ![The year 2027](docs/images/newyear-year.png) | ![A champagne bottle and POP!](docs/images/newyear-pop.png) |
+| The year rolls over, then fireworks | A champagne cork pops… |
+| ![Two glasses and CHEERS!](docs/images/newyear-cheers.png) | ![10, the start of the countdown](docs/images/newyear-countdown.png) |
+| …and two glasses clink: CHEERS! | 10, 9, 8… HAPPY NEW YEAR! |
 
 The **Birthday** show plays all day on each birthday you add on the phone page, with their
 names. More holidays are on the way
@@ -110,8 +133,9 @@ The UNO version runs the show on its own: no Wi-Fi, no scores, no phone page.
    `pip install platformio`) and plug the UNO into your computer.
 2. **Check the wiring** (see [First run](#first-run-find-your-displays-orientation)).
 3. Put your display's layout number in `src/config.h` as `ORIENTATION`. The UNO has room for
-   one show, `UNO_SHOW` in the same file (Thanksgiving; the birthday show needs the phone
-   page's names, so it's Pi only). Then upload it:
+   one show, `UNO_SHOW` in the same file (Thanksgiving, Christmas or New Year; the birthday
+   show needs the phone page's names, so it's Pi only). With no clock, the UNO skips the sleeps
+   count, the year and the countdown. Then upload it:
 
    ```bash
    pio run -t upload
@@ -158,8 +182,9 @@ after power-on.
 
 **Shows by the date.** Once the Pi has the time from the internet, `pi/scores.py` picks the
 day's show (the calendar is in `pi/season.py`): Thanksgiving from Nov 1 to Thanksgiving Day,
-and the Birthday show all day on every birthday you add on the phone page. Holidays without
-a show yet play Thanksgiving for now. The phone page shows "Automatic: …" and can pick any
+Christmas from the next day to Dec 25, New Year from Dec 26 to Jan 1, and the Birthday show
+all day on every birthday you add on the phone page. Holidays without a show yet play
+Thanksgiving for now. The phone page shows "Automatic: …" and can pick any
 show; a pick stays on until you set it back to Automatic. Offline, the sign keeps the show it
 had. Birthdays are kept on the Pi, and `pi/deploy.sh` keeps a copy in `~/.led-sign/` on your
 computer and puts them back if the SD card is ever re-flashed.
@@ -200,22 +225,23 @@ right, cable at the right-hand end.
 
 ## Make it yours
 
-Each show is in `src/shows/`: `thanksgiving.cpp` and `birthday.cpp`, each with its own
-`_words.h` and `_sprites.h`.
+Each show is in `src/shows/`: `thanksgiving.cpp`, `christmas.cpp`, `newyear.cpp` and
+`birthday.cpp`, each with its own `_words.h` and `_sprites.h`.
 
 - **Words**: everything a show says is in its `_words.h`: greetings, lists and the jokes. The
   font (`src/font.h`) has capital letters, digits and the usual punctuation.
-- **Pictures**: the turkey, pie, cake and friends are 8×8 pixel art in the `_sprites.h`
+- **Pictures**: the turkey, reindeer, snowman, cake and friends are 8×8 pixel art in the `_sprites.h`
   files, one byte per row, so you can draw your own with `0b00111100`-style rows.
 - **Animations**: the scenes are in the show's `.cpp`; its `run…()` function at the bottom
-  sets their order. Effects every show shares (dissolves, drop-in words, the parade, the
-  scores screen) are in `src/effects.cpp`.
+  sets their order. Effects every show shares (dissolves, drop-in words, the parade, confetti,
+  fireworks, the scores screen and the New Year's Eve countdown) are in `src/effects.cpp`.
 - **A new show**: add its files to `src/shows/`, a line to the table in `src/show.cpp`, and
   its name to `SHOWS` in `pi/season.py` (and its dates to the calendar there).
 - **Try it on your computer first**: `tools/preview/build.sh` runs the show and writes
   `tools/preview/build/preview.html`, which plays every frame on a picture of the sign.
-  With `PREVIEW_SCORES=file` it adds scores screens from a file of game lines, and with
-  `PREVIEW_TODAY=tools/preview/samples/birthday.today` it plays that day's show.
+  With `PREVIEW_SCORES=file` it adds scores screens from a file of game lines, with
+  `PREVIEW_TODAY=tools/preview/samples/christmas.today` it plays that day's show, and with
+  `PREVIEW_CLOCK="2026-12-31 23:58:30"` it has a clock (try that one for the countdown).
   `tools/preview/screenshots.py` turns moments of a preview into the pictures on this page
   (needs `pip install pillow`).
 - **The Pi program without a Pi**: `make -C pi term` builds `pi/ledsign-term`, which draws the

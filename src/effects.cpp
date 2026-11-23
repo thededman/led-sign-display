@@ -6,6 +6,7 @@
 uint8_t fb[WIDTH];
 uint8_t bg[WIDTH];
 bool sceneStopped;
+bool sceneHeld;
 Marcher showMarcher;
 
 // ---------------------------------------------------------------- drawing
@@ -169,6 +170,111 @@ void parade(const char *s, uint8_t marchers) {
   }
 }
 
+// Confetti fluttering down the sign
+static struct {
+  int8_t x[24], y[24];
+} confetti;
+
+void confettiStart() {
+  for (uint8_t i = 0; i < 24; i++) {
+    confetti.x[i] = rnd(WIDTH);
+    confetti.y[i] = -(int8_t)rnd(10);
+  }
+}
+
+// Moves the first `count` pieces on by one frame and draws them; with `refill`, pieces that
+// reach the bottom start again at the top
+void confettiStep(int f, uint8_t count, bool refill) {
+  for (uint8_t i = 0; i < count; i++) {
+    if (f % (1 + i % 3) == 0) confetti.y[i]++;
+    if (confetti.y[i] > 7 && refill) {
+      confetti.y[i] = -(int8_t)rnd(4);
+      confetti.x[i] = rnd(WIDTH);
+    }
+    if (rnd(4) == 0) confetti.x[i] += (int)rnd(3) - 1;
+    setPixel(fb, confetti.x[i], confetti.y[i]);
+  }
+}
+
+// A firework launched `age` frames ago: a rocket climbs to (x, y), bursts, then sparkles out
+static void drawFirework(int x, int y, int age) {
+  static const int8_t DX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static const int8_t DY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+  const int rise = 7 - y;
+  if (age < 0) return;
+  if (age < rise) {
+    setPixel(fb, x, 7 - age);
+    setPixel(fb, x, 8 - age);
+    return;
+  }
+  const int r = age - rise + 1;
+  if (r > 8) return;
+  for (uint8_t d = 0; d < 8; d++) {
+    for (int k = r - 1; k <= r && k <= 4; k++) {
+      if (k < 1 || (r > 4 && rnd(3))) continue;  // after the burst, only a few sparkles
+      int stretch = DY[d] == 0 ? k / 2 : 0;       // a wider burst sideways
+      setPixel(fb, x + DX[d] * (k + stretch), y + DY[d] * k);
+    }
+  }
+}
+
+void fireworks(uint8_t count) {
+  int8_t x[6], y[6];
+  int start[6];
+  for (uint8_t i = 0; i < count; i++) {
+    x[i] = 6 + rnd(WIDTH - 12);
+    y[i] = 2 + rnd(3);
+    start[i] = i * 7 + rnd(4);
+  }
+  const int end = start[count - 1] + 15;
+  for (int f = 0; f < end; f++) {
+    wipe(fb);
+    for (uint8_t i = 0; i < count; i++) drawFirework(x[i], y[i], f - start[i]);
+    FRAME(50);
+  }
+}
+
+// A party blower with its paper tube unrolled `len` pixels
+static void drawHorn(int len) {
+  for (int x = 0; x < 4; x++) {  // mouthpiece
+    setPixel(fb, x, 3);
+    setPixel(fb, x, 4);
+  }
+  for (int x = 4; x < 4 + len; x++) {  // striped paper tube
+    setPixel(fb, x, 3);
+    if (x % 2) setPixel(fb, x, 4);
+  }
+  const int c = 4 + len;  // the curl at the end
+  setPixel(fb, c, 3); setPixel(fb, c, 4);
+  setPixel(fb, c + 1, 2); setPixel(fb, c + 2, 2);
+  setPixel(fb, c + 3, 3); setPixel(fb, c + 3, 4);
+  setPixel(fb, c + 1, 5); setPixel(fb, c + 2, 5);
+}
+
+// The party blower unrolls with its sound (TOOT!) and curls back up, three times
+void partyHorn(const char *toot) {
+  const int full = 27, tootX = 4 + full + 6;
+  for (uint8_t round = 0; round < 3; round++) {
+    for (int len = 0; len <= full; len += 3) {
+      wipe(fb);
+      drawHorn(len);
+      FRAME(30);
+    }
+    for (uint8_t t = 0; t < 12; t++) {
+      wipe(fb);
+      drawHorn(full);
+      drawText(fb, toot, tootX + (t < 4 ? (int)rnd(3) - 1 : 0), 1);
+      FRAME(60);
+    }
+    for (int len = full; len >= 0; len -= 3) {
+      wipe(fb);
+      drawHorn(len);
+      FRAME(30);
+    }
+    FRAME(200);
+  }
+}
+
 // A joke from the show's list, in order, each with a little parade behind it. A message from
 // the phone takes every other joke's place.
 void sceneJoke(const char *const *jokes, uint8_t count, uint8_t *next) {
@@ -214,9 +320,119 @@ void sceneScores() {
   }
 }
 
+// ---------------------------------------------------------------- the date
+
+// Days since 1970-01-01 (Howard Hinnant's days_from_civil)
+static int32_t dayNumber(int32_t y, uint8_t m, uint8_t d) {
+  y -= m <= 2;
+  const int32_t era = (y >= 0 ? y : y - 399) / 400;
+  const uint32_t yoe = (uint32_t)(y - era * 400);
+  const uint32_t doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+  const uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return era * 146097 + (int32_t)doe - 719468;
+}
+
+int16_t daysUntil(uint8_t month, uint8_t day) {
+  LocalTime t;
+  if (!localTime(&t)) return -1;
+  const int32_t today = dayNumber(t.year, t.month, t.day);
+  int32_t target = dayNumber(t.year, month, day);
+  if (target < today) target = dayNumber(t.year + 1, month, day);
+  return target - today;
+}
+
+int32_t msToNewYear() {
+  LocalTime t;
+  if (!localTime(&t) || t.month != 12 || t.day != 31) return -1;
+  return 86400000L - (int32_t)t.ms;
+}
+
+uint16_t newYearNumber() {
+  LocalTime t;
+  if (!localTime(&t)) return 0;
+  return t.month == 12 ? t.year + 1 : t.year;
+}
+
 // ---------------------------------------------------------------- running scenes
 
+#ifndef ARDUINO  // the UNO has no clock, so no countdown
+
+// Writes a number of whole seconds as "1:42", or just "9" under a minute when bare
+static void writeTime(char *buf, int32_t secs, bool bare) {
+  uint8_t i = 0;
+  const int32_t m = secs / 60, s = secs % 60;
+  if (bare && m == 0) {
+    if (s >= 10) buf[i++] = '0' + s / 10;
+    buf[i++] = '0' + s % 10;
+  } else {
+    if (m >= 10) buf[i++] = '0' + m / 10;
+    buf[i++] = '0' + m % 10;
+    buf[i++] = ':';
+    buf[i++] = '0' + s / 10;
+    buf[i++] = '0' + s % 10;
+  }
+  buf[i] = 0;
+}
+
+// New Year's Eve: the time left ticks down, the last ten seconds count down in big digits in
+// step with the clock, and at midnight HAPPY NEW YEAR! with fireworks
+void newYearCountdown() {
+  sceneHeld = true;  // nothing cuts in: not a skip, not a show change at midnight
+  char buf[8];
+  for (int f = 0; msToNewYear() > 10000; f++) {  // 2:30 ... 0:11, with twinkles either side
+    writeTime(buf, (msToNewYear() + 999) / 1000, false);
+    wipe(fb);
+    drawText(fb, buf, centered(buf, 2), 0, 2);
+    if (f % 4 == 0) {
+      memset(bg, 0, WIDTH);  // new twinkles every few frames
+      for (uint8_t i = 0; i < 4; i++) setPixel(bg, i % 2 ? WIDTH - 1 - rnd(6) : rnd(6), rnd(8));
+    }
+    for (int x = 0; x < WIDTH; x++) fb[x] |= bg[x];
+    FRAME(100);
+  }
+  for (int32_t left; (left = msToNewYear()) > 0;) {  // 10 ... 1, each on its own second
+    writeTime(buf, (left + 999) / 1000, true);
+    wipe(fb);
+    drawText(fb, buf, centered(buf, 2), 0, 2);
+    FRAME(50);
+  }
+  // Midnight
+  confettiStart();
+  for (int t = 0; t < 30; t++) {
+    wipe(fb);
+    drawText(fb, "HAPPY", centered("HAPPY", 2), 0, 2);
+    confettiStep(t, 24, true);
+    FRAME(60);
+  }
+  fireworks(6);
+  dropIn("NEW YEAR!");
+  FRAME(1500);
+  const uint16_t year = newYearNumber();
+  if (year) {
+    char digits[6] = {0};
+    for (int i = 3, y = year; i >= 0; i--, y /= 10) digits[i] = '0' + y % 10;
+    for (int t = 0; t < 40; t++) {
+      wipe(fb);
+      drawWave(fb, digits, centered(digits, 2), t, 2);
+      FRAME(60);
+    }
+  }
+  fireworks(6);
+  fireworks(6);
+  sceneHeld = false;
+}
+#endif
+
 void play(void (*scene)()) {
+#ifndef ARDUINO
+  const int32_t left = msToNewYear();
+  if (left > 0 && left <= 150000) {  // whatever is playing, the countdown starts on time
+    sceneStopped = false;
+    newYearCountdown();
+    return;
+  }
+#endif
+  sceneHeld = false;          // only the countdown holds the sign
   if (showChanged()) return;  // the day's show changed: the rest of this pass is skipped
   bool isNew;
   const char *phone = phoneMessage(&isNew);

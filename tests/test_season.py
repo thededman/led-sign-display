@@ -73,10 +73,20 @@ class Decide(unittest.TestCase):
         self.assertEqual((picked["show"], picked["why"]), ("thanksgiving", "picked"))
 
     def test_decide_fallback_and_bad_pick(self):
-        d = season.decide(T(2026, 12, 10, 9), [], "auto")  # christmas isn't built yet
+        d = season.decide(T(2027, 2, 10, 9), [], "auto")  # valentines isn't built yet
         self.assertEqual((d["show"], d["why"]), ("thanksgiving", "auto"))
         d = season.decide(T(2026, 11, 22, 9), [], "halloween")  # stale or unknown pick = Automatic
         self.assertEqual((d["show"], d["why"]), ("thanksgiving", "auto"))
+
+    def test_christmas(self):
+        self.assertEqual(season.decide(T(2026, 11, 27, 0, 0), [], "auto")["show"], "christmas")
+        self.assertEqual(season.decide(T(2026, 12, 10, 9), [], "auto")["show"], "christmas")
+        self.assertIn(("christmas", "Christmas"), season.SHOWS)
+
+    def test_new_year(self):
+        self.assertEqual(season.decide(T(2026, 12, 28, 9), [], "auto")["show"], "newyear")
+        self.assertEqual(season.decide(T(2027, 1, 1, 0, 0), [], "auto")["show"], "newyear")
+        self.assertIn(("newyear", "New Year"), season.SHOWS)
 
     def test_decide_picked_birthday_uses_next_names(self):
         b = season.parse_birthdays("03-02 SAM\n")

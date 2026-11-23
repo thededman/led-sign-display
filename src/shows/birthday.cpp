@@ -21,70 +21,6 @@ static void sparkle(const char *s) {
   }
 }
 
-// Confetti fluttering down the sign
-static struct {
-  int8_t x[24], y[24];
-} confetti;
-
-static void confettiStart() {
-  for (uint8_t i = 0; i < 24; i++) {
-    confetti.x[i] = rnd(WIDTH);
-    confetti.y[i] = -(int8_t)rnd(10);
-  }
-}
-
-// Moves the first `count` pieces on by one frame and draws them; with `refill`, pieces that
-// reach the bottom start again at the top
-static void confettiStep(int f, uint8_t count, bool refill) {
-  for (uint8_t i = 0; i < count; i++) {
-    if (f % (1 + i % 3) == 0) confetti.y[i]++;
-    if (confetti.y[i] > 7 && refill) {
-      confetti.y[i] = -(int8_t)rnd(4);
-      confetti.x[i] = rnd(WIDTH);
-    }
-    if (rnd(4) == 0) confetti.x[i] += (int)rnd(3) - 1;
-    setPixel(fb, confetti.x[i], confetti.y[i]);
-  }
-}
-
-// A firework launched `age` frames ago: a rocket climbs to (x, y), bursts, then sparkles out
-static void drawFirework(int x, int y, int age) {
-  static const int8_t DX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-  static const int8_t DY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-  const int rise = 7 - y;
-  if (age < 0) return;
-  if (age < rise) {
-    setPixel(fb, x, 7 - age);
-    setPixel(fb, x, 8 - age);
-    return;
-  }
-  const int r = age - rise + 1;
-  if (r > 8) return;
-  for (uint8_t d = 0; d < 8; d++) {
-    for (int k = r - 1; k <= r && k <= 4; k++) {
-      if (k < 1 || (r > 4 && rnd(3))) continue;  // after the burst, only a few sparkles
-      int stretch = DY[d] == 0 ? k / 2 : 0;       // a wider burst sideways
-      setPixel(fb, x + DX[d] * (k + stretch), y + DY[d] * k);
-    }
-  }
-}
-
-static void fireworks(uint8_t count) {
-  int8_t x[6], y[6];
-  int start[6];
-  for (uint8_t i = 0; i < count; i++) {
-    x[i] = 6 + rnd(WIDTH - 12);
-    y[i] = 2 + rnd(3);
-    start[i] = i * 7 + rnd(4);
-  }
-  const int end = start[count - 1] + 15;
-  for (int f = 0; f < end; f++) {
-    wipe(fb);
-    for (uint8_t i = 0; i < count; i++) drawFirework(x[i], y[i], f - start[i]);
-    FRAME(50);
-  }
-}
-
 // A two-candle birthday cake, 16 wide, with its left edge at x; candles are at x + 4 and x + 11
 static void drawCake(uint8_t *buf, int x, bool lit) {
   for (int c = 0; c < 16; c++) {
@@ -298,46 +234,8 @@ static void gift() {
   dissolve(bg, false);
 }
 
-// A party blower with its paper tube unrolled `len` pixels
-static void drawHorn(int len) {
-  for (int x = 0; x < 4; x++) {  // mouthpiece
-    setPixel(fb, x, 3);
-    setPixel(fb, x, 4);
-  }
-  for (int x = 4; x < 4 + len; x++) {  // striped paper tube
-    setPixel(fb, x, 3);
-    if (x % 2) setPixel(fb, x, 4);
-  }
-  const int c = 4 + len;  // the curl at the end
-  setPixel(fb, c, 3); setPixel(fb, c, 4);
-  setPixel(fb, c + 1, 2); setPixel(fb, c + 2, 2);
-  setPixel(fb, c + 3, 3); setPixel(fb, c + 3, 4);
-  setPixel(fb, c + 1, 5); setPixel(fb, c + 2, 5);
-}
-
 // The party blower unrolls with a TOOT! and curls back up, three times
-static void horn() {
-  const int full = 27, tootX = 4 + full + 6;
-  for (uint8_t toot = 0; toot < 3; toot++) {
-    for (int len = 0; len <= full; len += 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    for (uint8_t t = 0; t < 12; t++) {
-      wipe(fb);
-      drawHorn(full);
-      drawText(fb, MSG_TOOT, tootX + (t < 4 ? (int)rnd(3) - 1 : 0), 1);
-      FRAME(60);
-    }
-    for (int len = full; len >= 0; len -= 3) {
-      wipe(fb);
-      drawHorn(len);
-      FRAME(30);
-    }
-    FRAME(200);
-  }
-}
+static void horn() { partyHorn(MSG_TOOT); }
 
 // Sing-along: the song scrolls across a little stage with a bouncing note at each end
 static void song() {

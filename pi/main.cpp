@@ -10,6 +10,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#ifdef __linux__
+#include <sys/timex.h>
+#endif
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -144,6 +148,37 @@ uint8_t scoreCount() { return scoreLines; }
 const char *scoreLine(uint8_t i) { return i < scoreLines ? scores[i] : nullptr; }
 
 const char *today(const char *key) { return todayValue(todayNow, key); }
+
+// True once the clock has been set from the internet since boot (what `timedatectl` calls
+// NTPSynchronized). Until then, after an offline reboot, the time is only the last one saved
+// and may be well behind, so there are no countdowns. Once synced it stays trusted.
+static bool clockSynced() {
+#ifdef __linux__
+  static bool synced;
+  if (!synced) {
+    struct timex tx = {};
+    synced = adjtimex(&tx) != TIME_ERROR && !(tx.status & STA_UNSYNC);
+  }
+  return synced;
+#else
+  return true;  // the terminal build on a Mac
+#endif
+}
+
+bool localTime(LocalTime *t) {
+  if (!clockSynced()) return false;
+  const auto now = std::chrono::system_clock::now();
+  const std::time_t secs = std::chrono::system_clock::to_time_t(now);
+  std::tm tm;
+  localtime_r(&secs, &tm);
+  if (tm.tm_year + 1900 < 2025) return false;  // a clock that was never set
+  const long ms = std::chrono::duration_cast<milliseconds>(now.time_since_epoch()).count() % 1000;
+  t->year = tm.tm_year + 1900;
+  t->month = tm.tm_mon + 1;
+  t->day = tm.tm_mday;
+  t->ms = ((tm.tm_hour * 60 + tm.tm_min) * 60 + tm.tm_sec) * 1000 + ms;
+  return true;
+}
 
 int main(int argc, char **argv) {
   if (const char *path = std::getenv("LEDSIGN_SETTINGS")) settingsPath = path;

@@ -5,6 +5,8 @@
 
 void runThanksgiving();
 void runBirthday();
+void runChristmas();
+void runNewYear();
 
 static const ShowEntry SHOWS[] = {
 #if WANT_SHOW(THANKSGIVING)
@@ -12,6 +14,12 @@ static const ShowEntry SHOWS[] = {
 #endif
 #if WANT_SHOW(BIRTHDAY)
   {"birthday", runBirthday},
+#endif
+#if WANT_SHOW(CHRISTMAS)
+  {"christmas", runChristmas},
+#endif
+#if WANT_SHOW(NEWYEAR)
+  {"newyear", runNewYear},
 #endif
 };
 

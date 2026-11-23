@@ -53,6 +53,7 @@ class Server(unittest.TestCase):
                     with self.assertRaises(urllib.error.HTTPError) as caught:
                         urllib.request.urlopen(request, timeout=5)
                     self.assertEqual(caught.exception.code, 400)
+                    caught.exception.close()
                 self.assertEqual(bdays.read_text(), "11-01 ALEX\n")
             finally:
                 httpd.shutdown()

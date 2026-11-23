@@ -1,20 +1,79 @@
 // Tests for the show table and the today file reader, with a scripted platform.
 //   tests/run.sh
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
 
+#include "effects.h"
 #include "show.h"
 #include "today.h"
 
 static int frames, switchAt = -1;
 static const char *todayShow = "thanksgiving", *switchTo = "";
 
-bool frame(uint16_t) {
+// A scripted clock: off until setClock(), then moved on by every frame
+static bool haveClock;
+static uint16_t clockYear;
+static uint8_t clockMonth, clockDay;
+static uint64_t clockMs;  // since midnight; can run past it until localTime() is asked
+
+static void setClock(uint16_t y, uint8_t mo, uint8_t d, uint8_t h, uint8_t mi, uint8_t sec) {
+  haveClock = true;
+  clockYear = y;
+  clockMonth = mo;
+  clockDay = d;
+  clockMs = ((h * 60 + mi) * 60 + sec) * 1000ull;
+}
+
+static uint8_t monthDays(uint16_t y, uint8_t m) {
+  static const uint8_t DAYS[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  const bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+  return m == 2 && leap ? 29 : DAYS[m - 1];
+}
+
+bool localTime(LocalTime *t) {
+  if (!haveClock) return false;
+  for (; clockMs >= 86400000ull; clockMs -= 86400000ull) {
+    if (++clockDay > monthDays(clockYear, clockMonth)) {
+      clockDay = 1;
+      if (++clockMonth > 12) {
+        clockMonth = 1;
+        clockYear++;
+      }
+    }
+  }
+  *t = {clockYear, clockMonth, clockDay, (uint32_t)clockMs};
+  return true;
+}
+
+// What was on the sign at chosen moments: ms after setClock()
+static uint64_t elapsed;
+static uint64_t shotAt[3];
+static uint8_t shots[3][WIDTH];
+static bool shotTaken[3];
+
+static uint64_t switchAtMs = UINT64_MAX;  // or switch shows when the clock gets this far
+static uint8_t testScores;                 // how many score lines the scores screen has
+
+bool frame(uint16_t ms) {
   frames++;
+  if (switchAtMs >= elapsed && switchAtMs < elapsed + ms) {  // the today file changes mid-frame
+    todayShow = switchTo;
+    elapsed += ms;
+    clockMs += ms;
+    return false;
+  }
+  for (int i = 0; i < 3; i++)
+    if (!shotTaken[i] && shotAt[i] >= elapsed && shotAt[i] < elapsed + ms) {
+      std::memcpy(shots[i], fb, WIDTH);
+      shotTaken[i] = true;
+    }
+  elapsed += ms;
+  clockMs += ms;
   if (frames == switchAt) {  // the today file changes: the platform ends the scene
     todayShow = switchTo;
     return false;
@@ -31,8 +90,13 @@ const char *phoneMessage(bool *isNew) {
   *isNew = false;
   return nullptr;
 }
-uint8_t scoreCount() { return 0; }
-const char *scoreLine(uint8_t) { return nullptr; }
+static const char *const SCORE_LINES[16] = {
+  "*DET 24 @ DAL 21 Q4 2:10", "NYJ 17 @ LAC 3 FINAL", "MIN @ SF 8:20 PM", "BUF 17 @ KC 21 Q3 4:32",
+  "NYG 10 @ DAL 24 FINAL", "MIA @ NE 1:00 PM", "BOS 101 @ NY 99 Q4 0:40", "CHI 3 @ TOR 2 P3 1:15",
+  "LAL @ GS 10:30 PM", "SEA 20 @ ARI 17 OT 2:00", "DEN 9 @ LV 6 FINAL", "PIT @ CLE 4:25 PM",
+  "TB 14 @ NO 14 HALFTIME", "HOU 7 @ IND 10 END Q1", "CAR @ ATL 1:00 PM", "WSH 21 @ PHI 28 FINAL"};
+uint8_t scoreCount() { return testScores; }
+const char *scoreLine(uint8_t i) { return i < testScores ? SCORE_LINES[i] : nullptr; }
 const char *today(const char *key) { return std::strcmp(key, "show") == 0 ? todayShow : ""; }
 
 static std::string readFile(const char *path) {
@@ -45,11 +109,11 @@ static std::string readFile(const char *path) {
 int main() {
   // which show a name means
   assert(std::strcmp(resolveShow("thanksgiving")->name, "thanksgiving") == 0);
-  assert(std::strcmp(resolveShow("christmas")->name, "thanksgiving") == 0);  // not built yet
+  assert(std::strcmp(resolveShow("valentines")->name, "thanksgiving") == 0);  // not built yet
   assert(std::strcmp(resolveShow("")->name, "thanksgiving") == 0);
 
   // a show the sign doesn't have plays the fallback in full, instead of ending every pass
-  todayShow = "christmas";
+  todayShow = "valentines";
   frames = 0;
   runShow();
   assert(frames > 1000);
@@ -76,6 +140,84 @@ int main() {
   frames = 0;
   runShow();
   assert(frames > 1000);
+
+  // the Christmas show: a full pass, with a clock (sleeps to go) and without
+  assert(std::strcmp(resolveShow("christmas")->name, "christmas") == 0);
+  todayShow = "christmas";
+  setClock(2026, 12, 20, 18, 0, 0);
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+  haveClock = false;
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+
+  // the New Year show: a full pass, with a clock (the year rolls over) and without
+  assert(std::strcmp(resolveShow("newyear")->name, "newyear") == 0);
+  todayShow = "newyear";
+  setClock(2026, 12, 28, 20, 0, 0);
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+  haveClock = false;
+  frames = 0;
+  runShow();
+  assert(frames > 1000);
+
+  // the date helpers
+  setClock(2026, 12, 20, 9, 0, 0);
+  assert(daysUntil(12, 25) == 5);
+  setClock(2026, 12, 25, 9, 0, 0);
+  assert(daysUntil(12, 25) == 0);
+  setClock(2026, 12, 26, 9, 0, 0);
+  assert(daysUntil(12, 25) == 364);
+  setClock(2026, 12, 31, 23, 59, 50);
+  assert(msToNewYear() == 10000 && newYearNumber() == 2027);
+  setClock(2026, 12, 30, 12, 0, 0);
+  assert(msToNewYear() == -1);
+  setClock(2027, 1, 1, 0, 0, 1);
+  assert(msToNewYear() == -1 && newYearNumber() == 2027);
+  setClock(2028, 2, 28, 23, 0, 0);  // a leap year: the 29th comes next
+  assert(daysUntil(3, 1) == 2);
+  haveClock = false;
+  assert(daysUntil(12, 25) == -1 && msToNewYear() == -1 && newYearNumber() == 0);
+
+  // New Year's Eve: the countdown runs on time, inside whatever show is playing, even when a
+  // long scene or a busy scores screen is running as its window opens
+  for (uint8_t run = 0; run < 2; run++) {
+    testScores = run ? 16 : 0;
+    const uint8_t startSec = run ? 13 : 0;  // 23:55:00, then 23:55:13 with scores
+    setClock(2026, 12, 31, 23, 55, startSec);
+    elapsed = 0;
+    const uint64_t toMidnight = 300000 - startSec * 1000;
+    const uint64_t moments[3] = {toMidnight - 9500, toMidnight - 500, toMidnight + 500};
+    for (int i = 0; i < 3; i++) {
+      shotAt[i] = moments[i];  // 23:59:50.5, 23:59:59.5, 00:00:00.5
+      shotTaken[i] = false;
+    }
+    todayShow = "thanksgiving";
+    for (int pass = 0; pass < 6 && !shotTaken[2]; pass++) runShow();
+    assert(shotTaken[0] && shotTaken[1] && shotTaken[2]);
+    uint8_t ten[WIDTH] = {0}, one[WIDTH] = {0};
+    drawText(ten, "10", centered("10", 2), 0, 2);
+    drawText(one, "1", centered("1", 2), 0, 2);
+    assert(std::memcmp(shots[0], ten, WIDTH) == 0);
+    assert(std::memcmp(shots[1], one, WIDTH) == 0);
+    assert(std::memcmp(shots[2], one, WIDTH) != 0);  // midnight: not still on 1
+  }
+  testScores = 0;
+
+  // a show change at midnight (a Jan 1 birthday) doesn't cut the celebration short
+  setClock(2026, 12, 31, 23, 59, 55);
+  elapsed = 0;
+  switchTo = "birthday";
+  switchAtMs = 5500;  // 00:00:00.5
+  todayShow = "newyear";
+  newYearCountdown();
+  assert(elapsed >= 5000 + 12000);  // HAPPY NEW YEAR! ran its course after the switch
+  switchAtMs = UINT64_MAX;
+  haveClock = false;
 
   // the today file, as the Python writer writes it
   Today t;
